@@ -79,11 +79,13 @@ func _on_touch_pressed(index: int, position: Vector2) -> void:
 	if not button.is_empty():
 		_button_touches[index] = button.action
 		Input.action_press(button.action)
-	elif position.x < size.x * 0.5 and _joystick_touch < 0:
+	elif position.x < size.x * 0.5:
+		# The newest finger on the left always takes the joystick, so a touch
+		# the browser cancelled without telling us can never leave it stuck.
 		_joystick_touch = index
 		_joystick_origin = position
 		_set_joystick(Vector2.ZERO)
-	elif _look_touch < 0:
+	else:
 		_look_touch = index
 
 
