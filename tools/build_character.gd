@@ -35,7 +35,8 @@ const ANIMATIONS := {
 	UAL2: ["LayToIdle", "Hit_Knockback", "NinjaJump_Idle_Loop"],
 }
 
-## Bones each body part of the model may be weighted to. Keys are prefixes of
+## Bones each body part of the model may be weighted to ("*fingers_r" stands
+## for every finger joint of that hand). Keys are prefixes of
 ## the model's mesh names (the longest match wins); the sleeves are the jacket
 ## meshes with materials #51 (right) and #48 (left).
 const PART_BONES := {
@@ -47,8 +48,8 @@ const PART_BONES := {
 	"belt": ["pelvis", "spine_01"],
 	"pants": ["pelvis", "thigh_l", "calf_l", "foot_l", "thigh_r", "calf_r", "foot_r"],
 	"r_foot": ["foot_l", "ball_l", "calf_l", "foot_r", "ball_r", "calf_r"],
-	"r_hand": ["hand_r", "lowerarm_r"],
-	"l_hand": ["hand_l", "lowerarm_l"],
+	"r_hand": ["hand_r", "lowerarm_r", "*fingers_r"],
+	"l_hand": ["hand_l", "lowerarm_l", "*fingers_l"],
 	"jacket_a_Material #51": ["clavicle_r", "upperarm_r", "lowerarm_r", "spine_03"],
 	"jacket_a_Material #48": ["clavicle_l", "upperarm_l", "lowerarm_l", "spine_03"],
 	"jacket_a": ["pelvis", "spine_01", "spine_02", "spine_03", "clavicle_l", "clavicle_r", "thigh_l", "thigh_r", "neck_01"],
@@ -63,6 +64,7 @@ const SEGMENTS := {
 	"foot_l": "ball_l", "ball_l": "ball_leaf_l", "thigh_r": "calf_r", "calf_r": "foot_r",
 	"foot_r": "ball_r", "ball_r": "ball_leaf_r",
 }
+const FINGERS: Array[String] = ["thumb", "index", "middle", "ring", "pinky"]
 
 var _source := ""
 ## Fitted pose, kept outside Skeleton3D (whose global poses only refresh
@@ -290,6 +292,13 @@ func _save_rigged_scene(skeleton: Skeleton3D, parts: Array[Dictionary]) -> void:
 	var segments := {}
 	for bone_name: String in SEGMENTS:
 		segments[bone_name] = [_global_origin(skeleton, bone_name), _global_origin(skeleton, SEGMENTS[bone_name])]
+	# Finger joints run along each finger, so the fingers can close on a grip.
+	for side in ["r", "l"]:
+		for finger in FINGERS:
+			for joint in 3:
+				var bone_name := "%s_%02d_%s" % [finger, joint + 1, side]
+				var child := "%s_%02d_%s" % [finger, joint + 2, side] if joint < 2 else "%s_04_leaf_%s" % [finger, side]
+				segments[bone_name] = [_global_origin(skeleton, bone_name), _global_origin(skeleton, child)]
 	var head := _global_origin(skeleton, "Head")
 	segments["Head"] = [head, head + Vector3(0, 0.2, 0)]
 
@@ -339,12 +348,26 @@ func _save_rigged_scene(skeleton: Skeleton3D, parts: Array[Dictionary]) -> void:
 	root.free()
 
 
+static func _finger_bones(side: String) -> Array:
+	var names := []
+	for finger in FINGERS:
+		for joint in 3:
+			names.append("%s_%02d_%s" % [finger, joint + 1, side])
+	return names
+
+
 func _part_candidates(part_name: String) -> Array:
 	var best := ""
 	for prefix: String in PART_BONES:
 		if part_name.begins_with(prefix) and prefix.length() > best.length():
 			best = prefix
-	return PART_BONES[best]
+	var bones := []
+	for bone_name: String in PART_BONES[best]:
+		if bone_name.begins_with("*fingers_"):
+			bones.append_array(_finger_bones(bone_name.right(1)))
+		else:
+			bones.append(bone_name)
+	return bones
 
 
 ## Weights a vertex to its nearest candidate bones (inverse distance).

@@ -79,6 +79,8 @@ var _look_hold_time := 0.0
 var _capture_click_frame := -1
 ## Whether the legs currently play the run cycle backwards (with hysteresis).
 var _running_backwards := false
+## 0..1, how far the body is in the shootdodge pose.
+var _dive_pose := 0.0
 
 @onready var visual: Node3D = $Visual
 @onready var body: Node3D = $Visual/Body
@@ -100,6 +102,7 @@ func _ready() -> void:
 	_body_rest_height = body.position.y
 	pistol.reload_started.connect(model.play_reload)
 	pistol.mode_changed.connect(model.set_dual)
+	model.hands_posed.connect(_hold_pistols)
 	_camera_rest_height = camera_yaw.position.y
 	# Browsers only allow pointer lock after a user gesture, so on the web
 	# the first click captures the mouse instead (see _unhandled_input).
@@ -306,8 +309,10 @@ func _update_visual(delta: float) -> void:
 	body.global_basis = Basis(current.slerp(target_basis.get_rotation_quaternion(), weight))
 	body.position.y = lerpf(body.position.y, target_height, weight)
 
+	var diving := state == State.DIVING or state == State.PRONE
+	_dive_pose = move_toward(_dive_pose, 1.0 if diving else 0.0, delta * (8.0 if diving else 4.0))
+	model.set_dive_pose(_dive_pose, _get_aim_forward().dot(_dive_direction))
 	model.aim_at(aim_point)
-	_hold_pistols()
 
 
 ## Picks the leg animation and returns how far (radians) the hips turn away
@@ -343,29 +348,23 @@ func _update_locomotion() -> float:
 	return relative
 
 
-## Keeps each pistol in its hand, pointing exactly at the crosshair.
+## Keeps each pistol in its hand. The arm IK puts the hands on the aim line,
+## so the guns point at the crosshair.
 func _hold_pistols() -> void:
-	_hold_gun(pistol.right_gun, "r")
+	pistol.right_gun.global_transform = model.get_gun_transform("r")
 	if pistol.dual:
-		_hold_gun(pistol.left_gun, "l")
-
-
-func _hold_gun(gun: GunModel, side: String) -> void:
-	var hand := model.get_hand_position(side)
-	var to_target := aim_point - hand
-	if to_target.length_squared() < 0.04:
-		return
-	var up := body.global_basis.y
-	if absf(to_target.normalized().dot(up)) > 0.98:
-		up = body.global_basis.z
-	gun.global_transform = Transform3D(Basis.looking_at(to_target, up), hand)
+		pistol.left_gun.global_transform = model.get_gun_transform("l")
 
 
 ## Orientation of the body while diving: the head points along the dive and
 ## the chest turns towards the aim, so diving forward is a "superman" pose
-## and diving backwards lands the player on their back.
+## and diving backwards lands the player on their back. In the air the body
+## follows the arc of the jump: head up while rising, down while falling.
 func _get_dive_body_basis() -> Basis:
 	var head := _dive_direction
+	if state == State.DIVING:
+		var climb := clampf(velocity.y / dive_speed, -0.6, 0.6) * 0.5
+		head = (_dive_direction + Vector3.UP * climb).normalized()
 	var aim_flat := _get_aim_forward()
 	var along := aim_flat.dot(head)
 	var chest := (aim_flat - head * along) + Vector3.DOWN * along

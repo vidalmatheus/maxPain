@@ -1,11 +1,17 @@
 class_name CharacterModel
 extends Node3D
 ## Animated character: drives an AnimationTree that blends locomotion (legs)
-## with pistol aiming (upper body) plus one-shot fire and reload actions, and
-## twists the spine so the upper body faces the aim.
+## with pistol aiming (upper body) plus one-shot fire and reload actions.
+## Procedural modifiers then pose the body on top of the animation: the dive
+## pose for shootdodges, the spine twist towards the aim, arm IK that holds
+## the guns on the aim line, and the head looking at the target.
 ##
 ## The tree is built in code so it is easy to read and review; the animations
 ## come from res://assets/characters/max_payne/animations.res.
+
+## Emitted every frame once the final pose (after all modifiers) is known;
+## read the guns' places with [method get_gun_transform].
+signal hands_posed
 
 enum Locomotion { IDLE, RUN, RUN_BACK, AIR, CROUCH }
 
@@ -17,16 +23,23 @@ const JOG_SPEED := 4.5
 ## Aim pitch (radians) that maps to the full "aim up/down" poses.
 const MAX_AIM_PITCH := deg_to_rad(60.0)
 const MAX_TWIST := deg_to_rad(100.0)
+## How fast the arm IK fades out for a reload and back in, per second.
+const IK_FADE_SPEED := 8.0
+## How fast the recoil of a shot settles, per second.
+const RECOIL_RECOVERY := 7.0
 
 @onready var rig: Node3D = $MaxPayne
 @onready var skeleton: Skeleton3D = rig.get_node(SKELETON_PATH)
 
 var _tree: AnimationTree
+var _dive: DivePoseModifier
 var _twist: AimTwistModifier
-var _arms: ArmAimModifier
+var _arms: ArmIKModifier
+var _head: HeadLookModifier
 var _locomotion := Locomotion.IDLE
-var _dual := false
 var _reload_timer: SceneTreeTimer
+## Gun transforms per hand, in skeleton space, from the last final pose.
+var _gun_poses := {"r": Transform3D.IDENTITY, "l": Transform3D.IDENTITY}
 
 
 func _ready() -> void:
@@ -39,26 +52,61 @@ func _ready() -> void:
 	_tree.active = true
 	_tree.set(&"parameters/upper/blend_amount", 1.0)
 
-	# Modifiers run in child order: twist the spine first, then the arms.
+	# Modifiers run in child order: body pose, spine twist, arms, head.
+	_dive = DivePoseModifier.new()
+	_dive.influence = 0.0
+	skeleton.add_child(_dive)
 	_twist = AimTwistModifier.new()
 	skeleton.add_child(_twist)
-	_arms = ArmAimModifier.new()
-	_arms.active = false
+	_arms = ArmIKModifier.new()
 	skeleton.add_child(_arms)
+	_head = HeadLookModifier.new()
+	skeleton.add_child(_head)
+	# Bone poses read later in the frame no longer include the modifiers, so
+	# grab the hands right after the last one.
+	_head.modification_processed.connect(_on_pose_finished)
 
 
-## World position of the palm of a hand ("r" or "l"), where a pistol's grip
-## sits: between the wrist and the knuckles.
-func get_hand_position(side := "r") -> Vector3:
-	var wrist := skeleton.get_bone_global_pose(skeleton.find_bone("hand_" + side)).origin
-	var knuckles := skeleton.get_bone_global_pose(skeleton.find_bone("middle_01_" + side)).origin
-	return skeleton.global_transform * wrist.lerp(knuckles, 0.6)
+func _process(delta: float) -> void:
+	# Let the reload animation drive the arms while it plays.
+	var ik_weight := 0.0 if _reload_timer != null else 1.0
+	_arms.influence = move_toward(_arms.influence, ik_weight, IK_FADE_SPEED * delta)
+	_arms.recoil = move_toward(_arms.recoil, 0.0, RECOIL_RECOVERY * delta)
 
 
-## Dual wield: both arms held out straight, each with a pistol.
+## World transform of the gun in a hand ("r" or "l"), following the hand
+## whether it is aiming (IK) or animated (reloading).
+func get_gun_transform(side := "r") -> Transform3D:
+	return skeleton.global_transform * _gun_poses[side]
+
+
+func _on_pose_finished() -> void:
+	for side in ["r", "l"]:
+		var grip := &"right" if side == "r" else &"left"
+		var hand := skeleton.get_bone_global_pose(skeleton.find_bone("hand_" + side))
+		_gun_poses[side] = hand * _arms.gun_from_hand(side, grip)
+	hands_posed.emit()
+
+
+## Dual wield: both arms held out straight, each with a pistol. Otherwise a
+## two-handed grip.
 func set_dual(enabled: bool) -> void:
-	_dual = enabled
-	_arms.active = enabled and _reload_timer == null
+	_arms.stance = ArmIKModifier.Stance.DUAL if enabled else ArmIKModifier.Stance.TWO_HANDED
+
+
+## Blends the shootdodge pose in ([param amount] 1) or out (0). [param along]
+## says where the aim is relative to the dive: 1 when shooting where Max
+## dives (head first, face down), -1 when shooting back over his feet (on his
+## back, curled up to aim between the legs).
+func set_dive_pose(amount: float, along: float) -> void:
+	_dive.influence = amount
+	_arms.extend = amount
+	_dive.active = amount > 0.0
+	if along >= 0.0:
+		_dive.curl = lerpf(0.15, -0.25, along)
+	else:
+		_dive.curl = lerpf(0.15, 0.95, -along)
+	_dive.leg_raise = maxf(-along, 0.0) * 0.5
 
 
 func set_locomotion(locomotion: Locomotion, ground_speed: float) -> void:
@@ -77,11 +125,13 @@ func aim_at(target: Vector3) -> void:
 		return
 	_twist.yaw = clampf(atan2(local.x, local.z), -MAX_TWIST, MAX_TWIST)
 	_arms.target = target
+	_head.target = target
 	var pitch := atan2(local.y - 1.4, Vector2(local.x, local.z).length())
 	_tree.set(&"parameters/aim/blend_position", clampf(pitch / MAX_AIM_PITCH, -1.0, 1.0))
 
 
 func play_fire() -> void:
+	_arms.recoil = 1.0
 	_tree.set(&"parameters/fire/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 
 
@@ -90,8 +140,6 @@ func play_reload(duration: float) -> void:
 	var length := ANIMATIONS.get_animation(&"Pistol_Reload").length
 	_tree.set(&"parameters/reload_speed/scale", length / maxf(duration, 0.1))
 	_tree.set(&"parameters/reload/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
-	# Let the reload animation drive the arms while it plays.
-	_arms.active = false
 	_reload_timer = get_tree().create_timer(duration, false)
 	_reload_timer.timeout.connect(_on_reload_finished.bind(_reload_timer))
 
@@ -99,7 +147,6 @@ func play_reload(duration: float) -> void:
 func _on_reload_finished(timer: SceneTreeTimer) -> void:
 	if timer == _reload_timer:
 		_reload_timer = null
-		_arms.active = _dual
 
 
 func _build_tree() -> AnimationNodeBlendTree:

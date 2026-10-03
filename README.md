@@ -17,7 +17,10 @@ signature **shootdodge**.
 
 - **Animated Max Payne** model with Max Payne 3 style upper/lower body
   blending: the legs run in the movement direction (forwards or backwards)
-  while the spine twists so the upper body and pistol always face the aim.
+  while the spine twists so the upper body always faces the aim. Arm IK keeps
+  the guns exactly on the aim line: a two-handed grip with one Beretta (the
+  left hand cupping the right), arms straight out with two, the fingers
+  closed around the grips and the head looking at the target.
 - **Third-person controller**: over-the-shoulder camera, the character always
   faces the aim direction and strafes/backpedals while shooting.
 - **Bullet time**: eases the world to 30% speed while mouse aiming stays fully
@@ -36,7 +39,10 @@ signature **shootdodge**.
   magazine in, slide when it was empty), dry fire and weapon switching.
 - **Shootdodge**: dive in any direction in slow motion, keep shooting while
   airborne, land on the ground (you can still shoot while prone) and get back
-  up.
+  up. The body stretches out head first and follows the arc of the jump,
+  rolling so the chest faces the aim: face down diving forward, on the side
+  diving sideways, and on the back diving backwards, curled up to shoot over
+  the feet.
 - **Max Payne 1 style HUD**: a health silhouette and a bullet-time hourglass
   (the sand is your adrenaline) at the bottom left, rounds as "magazine +
   reserve" and the weapon name at the bottom right, and a dot crosshair.
@@ -153,8 +159,9 @@ python3 -m http.server -d build/web
 
 ## Tests
 
-A headless smoke test drives the main scene and checks walking, shooting,
-kills, bullet time, shootdodge and reloading. It exits with code 0 when every
+A headless smoke test drives the main scene and checks walking, shooting
+(and that the pistol points at the crosshair), kills, bullet time,
+shootdodge, reloading, sounds and the touch controls. It exits with code 0 when every
 check passes:
 
 ```sh
@@ -169,12 +176,22 @@ A second scene plays a scripted sequence and saves screenshots plus an
 godot --path . res://tests/screenshots.tscn -- --output=/tmp/shots
 ```
 
+To review the character's poses, `tests/pose_gallery.tscn` freezes Max in
+each stance, run direction and shootdodge direction and saves screenshots
+from the game camera and from outside (add `--only=stand` for just the
+standing stances and close-ups of the hands):
+
+```sh
+godot --path . res://tests/pose_gallery.tscn -- --output=/tmp/poses
+```
+
 ## Character pipeline
 
 The character model has no skeleton, so `tools/build_character.gd` rigs it
 without Blender: it scales Quaternius' humanoid skeleton to Max, bends the
 arms and legs onto the mesh and weights each vertex to the nearest bones of its
-body part. It also extracts the animations the game uses. See
+body part (the hands to the finger joints too, so they can close around a
+grip). It also extracts the animations the game uses. See
 [assets/characters/max_payne/README.md](assets/characters/max_payne/README.md).
 
 ```sh

@@ -22,6 +22,7 @@ func _ready() -> void:
 	SoundFx.played.connect(func(stream: AudioStream) -> void: sounds.append(stream))
 
 	_check(player.is_on_floor(), "player lands on the floor")
+	_check(_gun_aim_error(player) < 4.0, "the pistol points at the crosshair (%.1f deg off)" % _gun_aim_error(player))
 	_check(player.state == Player.State.NORMAL, "player starts in NORMAL state")
 
 	# --- Walking -------------------------------------------------------------
@@ -73,6 +74,7 @@ func _ready() -> void:
 	_check(bullet_time.is_active, "shootdodge triggers bullet time")
 	await _frames(10)
 	_check(not player.is_on_floor(), "player is airborne during the dive")
+	_check(_gun_aim_error(player) < 6.0, "the pistol points at the crosshair mid-dive (%.1f deg off)" % _gun_aim_error(player))
 	_check(player.pistol.try_fire(player.global_position + Vector3(0, 1, -20), [player.get_rid()]), "can fire while diving")
 	Input.action_release(&"move_left")
 
@@ -257,6 +259,13 @@ func _send_axis(axis: JoyAxis, value: float) -> void:
 	motion.axis = axis
 	motion.axis_value = value
 	Input.parse_input_event(motion)
+
+
+## Angle in degrees between where the right pistol points and the crosshair.
+func _gun_aim_error(player: Player) -> float:
+	var gun := player.pistol.right_gun
+	var to_aim := player.aim_point - gun.muzzle.global_position
+	return rad_to_deg((-gun.global_basis.z).angle_to(to_aim))
 
 
 func _frames(count: int) -> void:
