@@ -1,13 +1,21 @@
 class_name Hourglass
 extends Control
-## Max Payne style bullet-time meter: an hourglass whose sand is the
-## adrenaline left. The top bulb holds the remaining adrenaline and sand
-## trickles down while bullet time is active.
+## Max Payne 1 style bullet-time meter: a tall hourglass with rounded bulbs
+## and a dark frame, filled from the bottom up with the adrenaline left.
 
-const FRAME := Color(0.85, 0.82, 0.75, 0.85)
-const SAND := Color(0.95, 0.78, 0.45, 0.95)
-const SAND_SPENT := Color(0.95, 0.78, 0.45, 0.35)
-const OUTLINE := Color(0, 0, 0, 0.55)
+const FRAME := Color(0.04, 0.04, 0.05, 0.85)
+const EMPTY := Color(0, 0, 0, 0.25)
+const SAND := Color(0.82, 0.86, 0.95, 0.9)
+const SAND_FLOWING := Color(0.95, 0.85, 0.55, 0.95)
+
+## Right half of the outline in normalized coordinates, top to bottom;
+## mirrored for the left half.
+const RIGHT_HALF: Array[Vector2] = [
+	Vector2(0.5, 0.0), Vector2(0.8, 0.0), Vector2(0.95, 0.035), Vector2(1.0, 0.1),
+	Vector2(1.0, 0.3), Vector2(0.92, 0.4), Vector2(0.7, 0.465), Vector2(0.62, 0.5),
+	Vector2(0.7, 0.535), Vector2(0.92, 0.6), Vector2(1.0, 0.7), Vector2(1.0, 0.9),
+	Vector2(0.95, 0.965), Vector2(0.8, 1.0), Vector2(0.5, 1.0),
+]
 
 ## Remaining adrenaline, 0..1.
 @export_range(0.0, 1.0) var fill := 1.0:
@@ -15,40 +23,30 @@ const OUTLINE := Color(0, 0, 0, 0.55)
 		fill = clampf(value, 0.0, 1.0)
 		queue_redraw()
 
-## Whether sand is currently falling (bullet time active).
+## Whether bullet time is active (the sand glows while it drains).
 var flowing := false:
 	set(value):
-		flowing = value
-		queue_redraw()
+		if value != flowing:
+			flowing = value
+			queue_redraw()
 
 
 func _draw() -> void:
-	var w := size.x
-	var h := size.y
-	var neck := Vector2(w * 0.5, h * 0.5)
-	var top := PackedVector2Array([Vector2(0, 0), Vector2(w, 0), neck])
-	var bottom := PackedVector2Array([neck, Vector2(w, h), Vector2(0, h)])
+	var shape := _outline()
+	draw_colored_polygon(shape, EMPTY)
+	var level := size.y * (1.0 - fill)
+	var clip := PackedVector2Array([Vector2(0, level), Vector2(size.x, level), size, Vector2(0, size.y)])
+	for piece in Geometry2D.intersect_polygons(shape, clip):
+		draw_colored_polygon(piece, SAND_FLOWING if flowing else SAND)
+	var closed := shape.duplicate()
+	closed.append(shape[0])
+	draw_polyline(closed, FRAME, 2.5, true)
 
-	# Remaining sand in the top bulb, settled against the neck.
-	if fill > 0.0:
-		var level := h * 0.5 * (1.0 - fill)
-		var half_width := w * 0.5 * (1.0 - level / (h * 0.5))
-		draw_colored_polygon(PackedVector2Array([
-			Vector2(w * 0.5 - half_width, level), Vector2(w * 0.5 + half_width, level), neck,
-		]), SAND)
-	# Spent sand piled at the bottom.
-	if fill < 1.0:
-		var pile := h * 0.5 * (1.0 - fill)
-		var y := h - pile
-		var half_width := w * 0.5 * ((y - h * 0.5) / (h * 0.5))
-		draw_colored_polygon(PackedVector2Array([
-			Vector2(w * 0.5 - half_width, y), Vector2(w * 0.5 + half_width, y), Vector2(w, h), Vector2(0, h),
-		]), SAND_SPENT if not flowing else SAND)
-	if flowing and fill > 0.0:
-		draw_line(neck, Vector2(w * 0.5, h - h * 0.5 * (1.0 - fill)), SAND, 1.5)
 
-	for outline in [top, bottom]:
-		var closed := PackedVector2Array(outline)
-		closed.append(outline[0])
-		draw_polyline(closed, OUTLINE, 3.5, true)
-		draw_polyline(closed, FRAME, 1.5, true)
+func _outline() -> PackedVector2Array:
+	var points := PackedVector2Array()
+	for p in RIGHT_HALF:
+		points.append(p * size)
+	for i in range(RIGHT_HALF.size() - 2, 0, -1):
+		points.append(Vector2(1.0 - RIGHT_HALF[i].x, RIGHT_HALF[i].y) * size)
+	return points

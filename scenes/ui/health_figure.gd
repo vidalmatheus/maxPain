@@ -1,11 +1,21 @@
 class_name HealthFigure
 extends Control
-## Max Payne style health indicator: a silhouette of the character that turns
-## red from the feet up as health drops.
+## Max Payne 1 style health indicator: a pale silhouette of the character
+## (arms hanging alongside the body) that turns red from the feet up as
+## health drops.
 
-const HEALTHY := Color(0.82, 0.82, 0.8, 0.9)
-const HURT := Color(0.75, 0.08, 0.05, 0.95)
-const OUTLINE := Color(0, 0, 0, 0.55)
+const HEALTHY := Color(0.78, 0.83, 0.78, 0.88)
+const HURT := Color(0.78, 0.24, 0.18, 0.92)
+const OUTLINE := Color(0, 0, 0, 0.45)
+
+## Right half of the silhouette in normalized coordinates (0..1), from the
+## top of the head down to the crotch; mirrored for the left half.
+const RIGHT_HALF: Array[Vector2] = [
+	Vector2(0.5, 0.0), Vector2(0.58, 0.0), Vector2(0.62, 0.03), Vector2(0.62, 0.115),
+	Vector2(0.58, 0.145), Vector2(0.58, 0.17), Vector2(0.88, 0.19), Vector2(0.96, 0.23),
+	Vector2(0.97, 0.58), Vector2(0.81, 0.59), Vector2(0.79, 0.61), Vector2(0.78, 1.0),
+	Vector2(0.54, 1.0), Vector2(0.52, 0.63), Vector2(0.5, 0.63),
+]
 
 ## 1.0 = full health, 0.0 = dead.
 @export_range(0.0, 1.0) var health := 1.0:
@@ -15,42 +25,28 @@ const OUTLINE := Color(0, 0, 0, 0.55)
 
 
 func _draw() -> void:
-	var parts := _body_parts()
-	# Outline pass, then the body. Each part is colored by how high it sits:
-	# damage "fills" the figure with red from the feet up.
-	for part: Dictionary in parts:
-		_draw_part(part, OUTLINE, 1.5)
-	for part: Dictionary in parts:
-		var height_ratio: float = 1.0 - (part.center as Vector2).y / size.y
-		var color := HURT if height_ratio < 1.0 - health else HEALTHY
-		_draw_part(part, color, 0.0)
+	var outline := _silhouette()
+	var hurt_line := size.y * health
+	_fill(outline, Rect2(0, 0, size.x, hurt_line), HEALTHY)
+	_fill(outline, Rect2(0, hurt_line, size.x, size.y - hurt_line), HURT)
+	var closed := outline.duplicate()
+	closed.append(outline[0])
+	draw_polyline(closed, OUTLINE, 1.5, true)
 
 
-## The silhouette, in coordinates relative to the control size.
-func _body_parts() -> Array[Dictionary]:
-	var w := size.x
-	var h := size.y
-	var parts: Array[Dictionary] = [
-		_circle(Vector2(w * 0.5, h * 0.09), h * 0.075),  # head
-		_rect(Rect2(w * 0.3, h * 0.18, w * 0.4, h * 0.36)),  # torso
-		_rect(Rect2(w * 0.12, h * 0.2, w * 0.16, h * 0.32)),  # right arm
-		_rect(Rect2(w * 0.72, h * 0.2, w * 0.16, h * 0.32)),  # left arm
-		_rect(Rect2(w * 0.31, h * 0.54, w * 0.17, h * 0.44)),  # right leg
-		_rect(Rect2(w * 0.52, h * 0.54, w * 0.17, h * 0.44)),  # left leg
-	]
-	return parts
+func _silhouette() -> PackedVector2Array:
+	var points := PackedVector2Array()
+	for p in RIGHT_HALF:
+		points.append(p * size)
+	for i in range(RIGHT_HALF.size() - 2, 0, -1):
+		points.append(Vector2(1.0 - RIGHT_HALF[i].x, RIGHT_HALF[i].y) * size)
+	return points
 
 
-func _circle(center: Vector2, radius: float) -> Dictionary:
-	return {"type": "circle", "center": center, "radius": radius}
-
-
-func _rect(rect: Rect2) -> Dictionary:
-	return {"type": "rect", "rect": rect, "center": rect.get_center()}
-
-
-func _draw_part(part: Dictionary, color: Color, grow: float) -> void:
-	if part.type == "circle":
-		draw_circle(part.center, part.radius + grow, color)
-	else:
-		draw_rect((part.rect as Rect2).grow(grow), color)
+## Fills the part of [param shape] inside [param rect].
+func _fill(shape: PackedVector2Array, rect: Rect2, color: Color) -> void:
+	if rect.size.y <= 0.0:
+		return
+	var clip := PackedVector2Array([rect.position, Vector2(rect.end.x, rect.position.y), rect.end, Vector2(rect.position.x, rect.end.y)])
+	for piece in Geometry2D.intersect_polygons(shape, clip):
+		draw_colored_polygon(piece, color)
