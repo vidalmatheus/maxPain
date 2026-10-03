@@ -12,6 +12,7 @@ var _toast_time_left := 0.0
 @onready var overlay: ColorRect = %BulletTimeOverlay
 @onready var adrenaline_bar: ProgressBar = %AdrenalineBar
 @onready var ammo_label: Label = %AmmoLabel
+@onready var weapon_label: Label = %WeaponLabel
 @onready var reload_label: Label = %ReloadLabel
 @onready var help_label: Label = %HelpLabel
 @onready var capture_hint: Label = %CaptureHint
@@ -27,7 +28,9 @@ func _ready() -> void:
 	toast_label.visible = false
 	if player:
 		player.pistol.ammo_changed.connect(_on_ammo_changed)
+		player.pistol.mode_changed.connect(_on_weapon_mode_changed)
 		_on_ammo_changed(player.pistol.ammo_in_magazine, player.pistol.reserve_ammo)
+		_on_weapon_mode_changed(player.pistol.dual)
 
 
 func _process(delta: float) -> void:
@@ -53,6 +56,7 @@ func _refresh_help() -> void:
 		"%s: jump      %s: reload      %s: bullet time" % _prompts([&"jump", &"reload", &"bullet_time"]),
 		"%s + direction: shootdodge" % GameInput.prompt(&"shootdodge"),
 		"%s standing still: bullet time" % GameInput.prompt(&"shootdodge"),
+		"%s: Beretta / dual Berettas" % GameInput.prompt(&"next_weapon"),
 	])
 	if GameInput.is_using_gamepad():
 		lines.append("%s: help" % GameInput.prompt(&"toggle_help"))
@@ -82,6 +86,10 @@ func _on_controller_connection_changed(controller_name: String, connected: bool)
 func _on_adrenaline_changed(value: float, max_value: float) -> void:
 	adrenaline_bar.max_value = max_value
 	adrenaline_bar.value = value
+
+
+func _on_weapon_mode_changed(dual: bool) -> void:
+	weapon_label.text = "DUAL BERETTAS" if dual else "BERETTA"
 
 
 func _on_ammo_changed(in_magazine: int, reserve: int) -> void:

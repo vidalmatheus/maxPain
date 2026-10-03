@@ -23,8 +23,10 @@ const MAX_TWIST := deg_to_rad(100.0)
 
 var _tree: AnimationTree
 var _twist: AimTwistModifier
-var _hand: BoneAttachment3D
+var _arms: ArmAimModifier
 var _locomotion := Locomotion.IDLE
+var _dual := false
+var _reload_timer: SceneTreeTimer
 
 
 func _ready() -> void:
@@ -37,17 +39,26 @@ func _ready() -> void:
 	_tree.active = true
 	_tree.set(&"parameters/upper/blend_amount", 1.0)
 
+	# Modifiers run in child order: twist the spine first, then the arms.
 	_twist = AimTwistModifier.new()
 	skeleton.add_child(_twist)
+	_arms = ArmAimModifier.new()
+	_arms.active = false
+	skeleton.add_child(_arms)
 
-	_hand = BoneAttachment3D.new()
-	_hand.bone_name = "hand_r"
-	skeleton.add_child(_hand)
+
+## World position of the palm of a hand ("r" or "l"), where a pistol's grip
+## sits: between the wrist and the knuckles.
+func get_hand_position(side := "r") -> Vector3:
+	var wrist := skeleton.get_bone_global_pose(skeleton.find_bone("hand_" + side)).origin
+	var knuckles := skeleton.get_bone_global_pose(skeleton.find_bone("middle_01_" + side)).origin
+	return skeleton.global_transform * wrist.lerp(knuckles, 0.6)
 
 
-## World position of the right hand, where the pistol is held.
-func get_hand_position() -> Vector3:
-	return _hand.global_position
+## Dual wield: both arms held out straight, each with a pistol.
+func set_dual(enabled: bool) -> void:
+	_dual = enabled
+	_arms.active = enabled and _reload_timer == null
 
 
 func set_locomotion(locomotion: Locomotion, ground_speed: float) -> void:
@@ -65,6 +76,7 @@ func aim_at(target: Vector3) -> void:
 	if local.length_squared() < 0.01:
 		return
 	_twist.yaw = clampf(atan2(local.x, local.z), -MAX_TWIST, MAX_TWIST)
+	_arms.target = target
 	var pitch := atan2(local.y - 1.4, Vector2(local.x, local.z).length())
 	_tree.set(&"parameters/aim/blend_position", clampf(pitch / MAX_AIM_PITCH, -1.0, 1.0))
 
@@ -78,6 +90,16 @@ func play_reload(duration: float) -> void:
 	var length := ANIMATIONS.get_animation(&"Pistol_Reload").length
 	_tree.set(&"parameters/reload_speed/scale", length / maxf(duration, 0.1))
 	_tree.set(&"parameters/reload/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+	# Let the reload animation drive the arms while it plays.
+	_arms.active = false
+	_reload_timer = get_tree().create_timer(duration, false)
+	_reload_timer.timeout.connect(_on_reload_finished.bind(_reload_timer))
+
+
+func _on_reload_finished(timer: SceneTreeTimer) -> void:
+	if timer == _reload_timer:
+		_reload_timer = null
+		_arms.active = _dual
 
 
 func _build_tree() -> AnimationNodeBlendTree:

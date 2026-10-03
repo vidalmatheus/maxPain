@@ -24,9 +24,11 @@ signature **shootdodge**.
   responsive. Adrenaline drains in real time and is refilled by kills. A
   full-screen effect (warm desaturation, vignette, chromatic aberration) fades
   in with the slowdown and sounds are slowed with it.
-- **Pistol**: semi-automatic, 18-round magazine, auto-reload, recoil, muzzle
-  flash. Bullets are **physical projectiles** (not hitscan), so you can watch
-  them fly in slow motion. They knock props around.
+- **Berettas**: a single Beretta 92FS (15 rounds, held two-handed) or **dual
+  Berettas** (30 rounds, one in each hand at arm's length, firing
+  alternately). Recoil, muzzle flash and a reload where the empty magazine
+  drops out with physics. Bullets are **physical projectiles** (not hitscan),
+  so you can watch them fly in slow motion. They knock props around.
 - **Shootdodge**: dive in any direction in slow motion, keep shooting while
   airborne, land on the ground (you can still shoot while prone) and get back
   up.
@@ -49,6 +51,7 @@ switch automatically to the device you are using.
 | Bullet time (toggle) | Shift or Q | LB or R3 (click) | L1 or R3 (click) |
 | Jump | Space | A | Cross |
 | Reload | R | X | Square |
+| Beretta / dual Berettas | 1 / 2 / mouse wheel | Y / D-pad | Triangle / D-pad |
 | Help | F1 | Menu / View | Options / Create |
 | Fullscreen | F11 | | |
 | Release mouse | Esc | | |
@@ -177,6 +180,7 @@ scenes/
   ui/                  HUD, crosshair and bullet-time screen shader
 tests/                 Headless smoke test and screenshot sequence
 assets/characters/     Character model, rig and animations (see its README)
+assets/weapons/        Weapon models (see their READMEs)
 tools/export.sh        Exports builds into build/<platform>/
 tools/build_character.gd  Rigs the character and extracts its animations
 .github/               CI: Pages deploy, PR previews, releases
@@ -193,7 +197,8 @@ Physics layers: `1 world`, `2 player`, `3 enemies`, `4 props`.
 - [x] Animated character model
 - [ ] Sound effects and music
 - [ ] Enemy AI that shoots back, player health and painkillers
-- [ ] More weapons (dual Berettas, shotgun, ...)
+- [x] Dual Berettas
+- [ ] More weapons (shotgun, Desert Eagle, Ingram, ...)
 - [ ] Bullet cam on the last kill
 - [ ] First level and graphic-novel style cutscenes
 - [x] CI that publishes builds for every platform
@@ -204,5 +209,9 @@ Physics layers: `1 world`, `2 player`, `3 enemies`, `4 props`.
   [BimboCattibo90](https://sketchfab.com/stefanocagnani1990) on
   [Sketchfab](https://sketchfab.com/3d-models/max-payne-1-b6ffa273ad774c66a2ff202d85f58e94),
   CC BY 4.0. The character is owned by Remedy Entertainment / Rockstar Games.
+- **Beretta model:** "Beretta M9" by
+  [emran.bayati](https://sketchfab.com/emran.bayati) on
+  [Sketchfab](https://sketchfab.com/3d-models/beretta-m9-d1200d9aa28f466484f7d3fdd7724e76),
+  CC BY 4.0.
 - **Animations:** Universal Animation Library 1 and 2 by
   [Quaternius](https://quaternius.com), CC0.

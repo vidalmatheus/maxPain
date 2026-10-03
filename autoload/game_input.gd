@@ -36,11 +36,14 @@ const KEYS := {
 	&"release_mouse": [KEY_ESCAPE],
 	&"toggle_help": [KEY_F1],
 	&"toggle_fullscreen": [KEY_F11],
+	&"weapon_beretta": [KEY_1],
+	&"weapon_dual_berettas": [KEY_2],
 }
 
 const MOUSE_BUTTONS := {
 	&"fire": [MOUSE_BUTTON_LEFT],
 	&"shootdodge": [MOUSE_BUTTON_RIGHT],
+	&"next_weapon": [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN],
 }
 
 ## Button names follow the Xbox layout; on PlayStation A = Cross, B = Circle,
@@ -51,6 +54,7 @@ const JOY_BUTTONS := {
 	&"bullet_time": [JOY_BUTTON_LEFT_SHOULDER, JOY_BUTTON_RIGHT_STICK],
 	&"shootdodge": [JOY_BUTTON_RIGHT_SHOULDER],
 	&"toggle_help": [JOY_BUTTON_START, JOY_BUTTON_BACK],
+	&"next_weapon": [JOY_BUTTON_Y, JOY_BUTTON_DPAD_LEFT, JOY_BUTTON_DPAD_RIGHT],
 }
 
 ## Each entry is [axis, direction].
@@ -79,6 +83,7 @@ const PROMPTS := {
 	&"bullet_time": ["Shift / Q", "LB / R3", "L1 / R3"],
 	&"shootdodge": ["Right click", "RB / LT", "R1 / L2"],
 	&"toggle_help": ["F1", "Menu", "Options"],
+	&"next_weapon": ["1 / 2 / Wheel", "Y", "Triangle"],
 }
 
 ## Layout used for prompts, based on the last device that sent input.

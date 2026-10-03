@@ -55,6 +55,28 @@ func _ready() -> void:
 	await _physics_frames(30)
 	await _shot("prone", "Landed: still able to shoot while on the ground.")
 
+	# Reload: the empty magazine drops out (with physics).
+	Input.action_press(&"move_forward")
+	await _physics_frames(60)
+	Input.action_release(&"move_forward")
+	await _physics_frames(20)
+	_player.call(&"_fire")
+	await _game_seconds(0.2)
+	_player.pistol.reload()
+	await _game_seconds(0.45)
+	await _shot("reload", "Reloading: the magazine drops out.")
+
+	# Dual Berettas in bullet time.
+	await _game_seconds(1.5)
+	_player.pistol.set_dual(true)
+	BulletTime.toggle()
+	await _game_seconds(0.4)
+	for i in 4:
+		_player.call(&"_fire")
+		await _game_seconds(0.12)
+	await _shot("dual_berettas", "Dual Berettas, one in each hand, firing alternately.")
+	BulletTime.toggle()
+
 	_write_index()
 	print("Saved %d screenshots to %s" % [_shots.size(), ProjectSettings.globalize_path(_output_dir)])
 	get_tree().quit()

@@ -99,6 +99,7 @@ func _ready() -> void:
 	visual.rotation.y = _yaw
 	_body_rest_height = body.position.y
 	pistol.reload_started.connect(model.play_reload)
+	pistol.mode_changed.connect(model.set_dual)
 	_camera_rest_height = camera_yaw.position.y
 	# Browsers only allow pointer lock after a user gesture, so on the web
 	# the first click captures the mouse instead (see _unhandled_input).
@@ -168,6 +169,12 @@ func _process_actions() -> void:
 		_try_shootdodge()
 	if Input.is_action_just_pressed(&"bullet_time"):
 		BulletTime.toggle()
+	if Input.is_action_just_pressed(&"weapon_beretta"):
+		pistol.set_dual(false)
+	if Input.is_action_just_pressed(&"weapon_dual_berettas"):
+		pistol.set_dual(true)
+	if Input.is_action_just_pressed(&"next_weapon"):
+		pistol.set_dual(not pistol.dual)
 
 
 ## Right-stick aiming. Uses real time so it is not slowed by bullet time.
@@ -299,7 +306,7 @@ func _update_visual(delta: float) -> void:
 	body.position.y = lerpf(body.position.y, target_height, weight)
 
 	model.aim_at(aim_point)
-	_hold_pistol()
+	_hold_pistols()
 
 
 ## Picks the leg animation and returns how far (radians) the hips turn away
@@ -335,16 +342,22 @@ func _update_locomotion() -> float:
 	return relative
 
 
-## Keeps the pistol in the right hand, pointing exactly at the crosshair.
-func _hold_pistol() -> void:
-	var hand := model.get_hand_position()
+## Keeps each pistol in its hand, pointing exactly at the crosshair.
+func _hold_pistols() -> void:
+	_hold_gun(pistol.right_gun, "r")
+	if pistol.dual:
+		_hold_gun(pistol.left_gun, "l")
+
+
+func _hold_gun(gun: GunModel, side: String) -> void:
+	var hand := model.get_hand_position(side)
 	var to_target := aim_point - hand
 	if to_target.length_squared() < 0.04:
 		return
 	var up := body.global_basis.y
 	if absf(to_target.normalized().dot(up)) > 0.98:
 		up = body.global_basis.z
-	pistol.global_transform = Transform3D(Basis.looking_at(to_target, up), hand)
+	gun.global_transform = Transform3D(Basis.looking_at(to_target, up), hand)
 
 
 ## Orientation of the body while diving: the head points along the dive and

@@ -135,6 +135,34 @@ func _ready() -> void:
 	await _frames(120)
 	_check(player.pistol.ammo_in_magazine == player.pistol.magazine_size, "reload refills the magazine")
 
+	# --- Dual Berettas -----------------------------------------------------------
+	_check(player.pistol.magazine_size == 15, "a Beretta magazine holds 15 rounds")
+	var shooters: Array[GunModel] = []
+	player.pistol.fired.connect(func(gun: GunModel) -> void: shooters.append(gun))
+	var key_2 := InputEventKey.new()
+	key_2.physical_keycode = KEY_2
+	key_2.pressed = true
+	Input.parse_input_event(key_2)
+	await _frames(2)
+	key_2 = key_2.duplicate()
+	key_2.pressed = false
+	Input.parse_input_event(key_2)
+	await _frames(30)
+	_check(player.pistol.dual, "key 2 switches to dual Berettas")
+	_check(player.pistol.ammo_in_magazine == 30, "dual Berettas hold 30 rounds")
+	_check(player.pistol.left_gun.visible, "the second Beretta appears in the left hand")
+	for i in 2:
+		player.pistol.try_fire(chest, [player.get_rid()])
+		await _frames(8)
+	_check(shooters.size() == 2 and shooters[0] != shooters[1], "dual Berettas fire alternately")
+	player.pistol.reload()
+	await _frames(2)
+	_check(get_tree().get_nodes_in_group(&"dropped_magazines").size() >= 2, "reloading drops both magazines")
+	_check(not player.pistol.left_gun.has_magazine(), "guns are empty while reloading")
+	await _frames(150)
+	_check(player.pistol.ammo_in_magazine == 30, "dual reload refills both magazines")
+	_check(player.pistol.right_gun.has_magazine() and player.pistol.left_gun.has_magazine(), "fresh magazines are inserted")
+
 	print("\n%s" % ("ALL CHECKS PASSED" if _failures == 0 else "%d CHECK(S) FAILED" % _failures))
 	get_tree().quit(1 if _failures > 0 else 0)
 
