@@ -20,6 +20,7 @@ config/icon="res://icon.svg"
 
 GameInput="*res://autoload/game_input.gd"
 BulletTime="*res://autoload/bullet_time.gd"
+SoundFx="*res://autoload/sound_fx.gd"
 
 [display]
 

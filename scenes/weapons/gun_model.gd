@@ -1,7 +1,8 @@
 class_name GunModel
 extends Node3D
-## Visual of a single Beretta: muzzle flash, recoil kick and the magazine,
-## which drops out with physics when reloading and is replaced by a new one.
+## Visual of a single Beretta: muzzle flash, recoil kick, the shot sound and
+## the magazine, which drops out with physics when reloading and is replaced
+## by a new one. Spent casings and dropped magazines clink on the floor.
 ##
 ## The weapon logic (ammo, fire rate, bullets) lives in Pistol.
 
@@ -11,6 +12,16 @@ const DROPPED_MAGAZINE_LIFETIME := 12.0
 ## removed early if there are too many on the ground.
 const CASING_LIFETIME := 8.0
 const MAX_CASINGS := 60
+## Each casing clinks on its first few bounces only.
+const CASING_CLINKS := 3
+
+const SHOT_SOUND := preload("res://assets/sounds/pistol_shot.ogg")
+const CASING_SOUNDS: Array[AudioStream] = [
+	preload("res://assets/sounds/casing_1.ogg"),
+	preload("res://assets/sounds/casing_2.ogg"),
+	preload("res://assets/sounds/casing_3.ogg"),
+]
+const MAGAZINE_DROP_SOUND := preload("res://assets/sounds/magazine_drop.ogg")
 
 ## Shared by every casing, created on first use.
 static var _casing_mesh: Mesh
@@ -60,6 +71,7 @@ func play_fire() -> void:
 	muzzle_flash.visible = true
 	muzzle_flash.rotation.z = randf() * TAU
 	_kick = kick_distance
+	SoundFx.play_3d(SHOT_SOUND, muzzle.global_position, 0.0, randf_range(0.94, 1.06), 20.0)
 	_eject_casing()
 
 
@@ -78,6 +90,11 @@ func _eject_casing() -> void:
 	body.continuous_cd = true  # tiny and fast: avoid falling through the floor
 	body.physics_material_override = _get_casing_bounce()
 	body.add_to_group(&"shell_casings")
+	_clink_on_impact(body, CASING_CLINKS, func() -> void:
+		# Brass rings much higher than the metal plates the samples come from.
+		var speed := body.linear_velocity.length()
+		SoundFx.play_3d(CASING_SOUNDS.pick_random(), body.global_position,
+				linear_to_db(clampf(speed / 3.0, 0.2, 1.0)) - 6.0, randf_range(2.0, 2.6), 3.0))
 	var mesh := MeshInstance3D.new()
 	mesh.mesh = _get_casing_mesh()
 	mesh.rotation.x = PI * 0.5  # cylinder along the barrel axis
@@ -96,6 +113,18 @@ func _eject_casing() -> void:
 	body.linear_velocity = right * randf_range(2.0, 3.0) + up * randf_range(1.5, 2.5) + back * randf_range(0.2, 0.8)
 	body.angular_velocity = Vector3(randf_range(-25, 25), randf_range(-25, 25), randf_range(-25, 25))
 	get_tree().create_timer(CASING_LIFETIME, false).timeout.connect(body.queue_free)
+
+
+## Calls [param play_sound] when [param body] hits the floor, for its first
+## [param max_clinks] bounces.
+func _clink_on_impact(body: RigidBody3D, max_clinks: int, play_sound: Callable) -> void:
+	body.contact_monitor = true
+	body.max_contacts_reported = 1
+	var clinks := [0]  # boxed, so the lambda can count
+	body.body_entered.connect(func(_other: Node) -> void:
+		if clinks[0] < max_clinks:
+			clinks[0] += 1
+			play_sound.call())
 
 
 static func _get_casing_mesh() -> Mesh:
@@ -151,6 +180,8 @@ func _spawn_dropped_copy(mesh_instance: MeshInstance3D) -> void:
 	body.collision_mask = 1  # world only
 	body.mass = 0.3
 	body.add_to_group(&"dropped_magazines")
+	_clink_on_impact(body, 2, func() -> void:
+		SoundFx.play_3d(MAGAZINE_DROP_SOUND, body.global_position, -4.0, randf_range(0.9, 1.1), 4.0))
 	var copy := MeshInstance3D.new()
 	copy.mesh = mesh_instance.mesh
 	var shape := CollisionShape3D.new()

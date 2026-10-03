@@ -78,6 +78,9 @@ func _ready() -> void:
 	BulletTime.toggle()
 
 	_write_index()
+	SoundFx.stop_all()
+	for i in 10:
+		await get_tree().process_frame
 	print("Saved %d screenshots to %s" % [_shots.size(), ProjectSettings.globalize_path(_output_dir)])
 	get_tree().quit()
 

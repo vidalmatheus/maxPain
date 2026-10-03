@@ -53,8 +53,6 @@ func _process(_delta: float) -> void:
 
 	var target_scale := slow_time_scale if is_active else 1.0
 	Engine.time_scale = move_toward(Engine.time_scale, target_scale, ease_speed * real_delta)
-	# Slow sounds down together with the world.
-	AudioServer.playback_speed_scale = Engine.time_scale
 
 
 ## Manually toggles bullet time on/off.

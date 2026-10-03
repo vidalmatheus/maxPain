@@ -13,6 +13,11 @@ signal reload_started(duration: float)
 signal mode_changed(dual: bool)
 
 const BULLET_SCENE := preload("res://scenes/weapons/bullet.tscn")
+const MAGAZINE_OUT_SOUND := preload("res://assets/sounds/reload_magazine_out.ogg")
+const MAGAZINE_IN_SOUND := preload("res://assets/sounds/reload_magazine_in.ogg")
+const SLIDE_SOUND := preload("res://assets/sounds/reload_slide.ogg")
+const DRY_FIRE_SOUND := preload("res://assets/sounds/dry_fire.ogg")
+const SWITCH_SOUND := preload("res://assets/sounds/weapon_switch.ogg")
 
 @export var right_gun: GunModel
 @export var left_gun: GunModel
@@ -44,6 +49,8 @@ var _cooldown := 0.0
 var _reload_timer := 0.0
 var _reload_duration := 0.0
 var _magazine_inserted := true
+## Reloading an empty gun ends with racking the slide.
+var _reloading_empty := false
 ## Which gun fires next in dual-wield mode (0 = right, 1 = left).
 var _next_gun := 0
 
@@ -62,6 +69,7 @@ func _process(delta: float) -> void:
 			_magazine_inserted = true
 			for gun in get_active_guns():
 				gun.insert_magazine()
+			_play_sound(MAGAZINE_IN_SOUND)
 		if _reload_timer <= 0.0:
 			_finish_reload()
 
@@ -89,6 +97,7 @@ func set_dual(enabled: bool) -> void:
 	reserve_ammo -= ammo_in_magazine
 	_next_gun = 0
 	_cooldown = draw_time
+	_play_sound(SWITCH_SOUND, -4.0)
 	mode_changed.emit(dual)
 	ammo_changed.emit(ammo_in_magazine, reserve_ammo)
 
@@ -99,6 +108,9 @@ func try_fire(target: Vector3, exclude: Array[RID]) -> bool:
 	if _cooldown > 0.0 or is_reloading():
 		return false
 	if ammo_in_magazine <= 0:
+		if reserve_ammo <= 0:
+			_cooldown = fire_interval
+			_play_sound(DRY_FIRE_SOUND, -6.0)
 		reload()
 		return false
 
@@ -124,8 +136,10 @@ func reload() -> void:
 	_reload_duration = dual_reload_time if dual else reload_time
 	_reload_timer = _reload_duration
 	_magazine_inserted = false
+	_reloading_empty = ammo_in_magazine == 0
 	for gun in get_active_guns():
 		gun.drop_magazine()
+	_play_sound(MAGAZINE_OUT_SOUND)
 	reload_started.emit(_reload_duration)
 
 
@@ -133,7 +147,14 @@ func _finish_reload() -> void:
 	var taken := mini(magazine_size - ammo_in_magazine, reserve_ammo)
 	ammo_in_magazine += taken
 	reserve_ammo -= taken
+	if _reloading_empty:
+		_play_sound(SLIDE_SOUND)
 	ammo_changed.emit(ammo_in_magazine, reserve_ammo)
+
+
+## Plays a handling sound at the right hand.
+func _play_sound(stream: AudioStream, volume_db := -2.0) -> void:
+	SoundFx.play_3d(stream, right_gun.global_position, volume_db, randf_range(0.97, 1.03), 4.0)
 
 
 func _spawn_bullet(origin: Vector3, target: Vector3, exclude: Array[RID]) -> void:

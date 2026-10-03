@@ -23,13 +23,17 @@ signature **shootdodge**.
 - **Bullet time**: eases the world to 30% speed while mouse aiming stays fully
   responsive. Adrenaline drains in real time and is refilled by kills. A
   full-screen effect (warm desaturation, vignette, chromatic aberration) fades
-  in with the slowdown and sounds are slowed with it.
+  in with the slowdown, and a "time freeze" hit and a droning clock play
+  while the world's sounds slow down, drop in pitch and get muffled.
 - **Berettas**: a single Beretta 92FS (15 rounds, held two-handed) or **dual
   Berettas** (30 rounds, one in each hand at arm's length, firing
   alternately). Recoil, muzzle flash, spent casings ejected to the right that
   bounce on the floor, and a reload where the empty magazine drops out with
   physics. Bullets are **physical projectiles** (not hitscan),
   so you can watch them fly in slow motion. They knock props around.
+- **Sound effects**: positional gunshots, brass casings clinking on every
+  bounce, magazines hitting the floor, a three-part reload (magazine out,
+  magazine in, slide when it was empty), dry fire and weapon switching.
 - **Shootdodge**: dive in any direction in slow motion, keep shooting while
   airborne, land on the ground (you can still shoot while prone) and get back
   up.
@@ -184,6 +188,7 @@ godot --headless --path . -s tools/build_character.gd -- --source=<animation pac
 autoload/
   bullet_time.gd       Global slow-motion controller and adrenaline meter
   game_input.gd        Default input bindings (keyboard, mouse, gamepad)
+  sound_fx.gd          Sound effects and the bullet-time soundscape
 scenes/
   main.tscn            Test arena
   player/              Player controller, camera and animated character model
@@ -196,8 +201,10 @@ tests/                 Headless smoke test and screenshot sequence
 assets/characters/     Character model, rig and animations (see its README)
 assets/weapons/        Weapon models (see their READMEs)
 assets/fonts/          HUD font and its license
+assets/sounds/         Sound effects (CC0, see its README)
 tools/export.sh        Exports builds into build/<platform>/
 tools/build_character.gd  Rigs the character and extracts its animations
+tools/prepare_sounds.sh   Cuts the sound effects out of their source packs
 .github/               CI: Pages deploy, PR previews, releases
 ```
 
@@ -210,7 +217,8 @@ Physics layers: `1 world`, `2 player`, `3 enemies`, `4 props`.
 - [x] Pistol with physical bullets
 - [x] Shootdodge
 - [x] Animated character model
-- [ ] Sound effects and music
+- [x] Sound effects
+- [ ] Music
 - [ ] Enemy AI that shoots back, player health and painkillers
 - [x] Dual Berettas
 - [ ] More weapons (shotgun, Desert Eagle, Ingram, ...)
@@ -232,3 +240,7 @@ Physics layers: `1 world`, `2 player`, `3 enemies`, `4 props`.
   CC BY 4.0.
 - **Animations:** Universal Animation Library 1 and 2 by
   [Quaternius](https://quaternius.com), CC0.
+- **Sounds:** [Kenney](https://kenney.nl), The Free Firearm Sound Library
+  (Ben Jaszczak et al.), SpringySpringo and MidFag on
+  [OpenGameArt](https://opengameart.org), all CC0; see
+  [assets/sounds/README.md](assets/sounds/README.md).

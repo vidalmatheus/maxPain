@@ -18,6 +18,8 @@ func _ready() -> void:
 	var player: Player = main.get_node("Player")
 	# Target3 has a clear line of fire from the spawn point.
 	var target: TargetDummy = main.get_node("Targets/Target3")
+	var sounds: Array[AudioStream] = []
+	SoundFx.played.connect(func(stream: AudioStream) -> void: sounds.append(stream))
 
 	_check(player.is_on_floor(), "player lands on the floor")
 	_check(player.state == Player.State.NORMAL, "player starts in NORMAL state")
@@ -36,7 +38,9 @@ func _ready() -> void:
 	_check(player.pistol.try_fire(chest, [player.get_rid()]), "pistol fires")
 	_check(player.pistol.ammo_in_magazine == ammo_before - 1, "firing consumes ammo")
 	_check(get_tree().get_nodes_in_group(&"shell_casings").size() == 1, "firing ejects a shell casing")
-	await _frames(30)
+	_check(GunModel.SHOT_SOUND in sounds, "firing plays a gunshot")
+	await _frames(60)
+	_check(GunModel.CASING_SOUNDS.any(func(s: AudioStream) -> bool: return s in sounds), "the casing clinks on the floor")
 	_check(target.health < target.max_health, "bullet travels and damages the target")
 
 	# Kill it and check the adrenaline reward.
@@ -54,10 +58,12 @@ func _ready() -> void:
 	await _frames(30)
 	_check(bullet_time.is_active, "bullet time activates")
 	_check(Engine.time_scale < 0.5, "time scale slows down (%.2f)" % Engine.time_scale)
+	_check(SoundFx.is_bullet_time_loop_playing() and SoundFx.is_world_muffled(), "bullet time drones and muffles the world")
 	bullet_time.toggle()
 	await _frames(30)
 	_check(not bullet_time.is_active, "bullet time deactivates")
 	_check(is_equal_approx(Engine.time_scale, 1.0), "time scale returns to 1.0")
+	_check(not SoundFx.is_bullet_time_loop_playing() and not SoundFx.is_world_muffled(), "normal speed sounds normal again")
 
 	# --- Shootdodge -----------------------------------------------------------
 	Input.action_press(&"move_left")
@@ -135,6 +141,7 @@ func _ready() -> void:
 	_check(player.pistol.is_reloading(), "reload starts")
 	await _frames(120)
 	_check(player.pistol.ammo_in_magazine == player.pistol.magazine_size, "reload refills the magazine")
+	_check(Pistol.MAGAZINE_OUT_SOUND in sounds and Pistol.MAGAZINE_IN_SOUND in sounds, "reloading plays the magazine sounds")
 
 	# --- Dual Berettas -----------------------------------------------------------
 	_check(player.pistol.magazine_size == 15, "a Beretta magazine holds 15 rounds")
@@ -202,6 +209,8 @@ func _ready() -> void:
 	_send_touch(2, look_start + Vector2(60, 0), false)
 	_check(not is_equal_approx(player.get(&"_yaw"), yaw_before_drag), "dragging on the right side aims")
 
+	SoundFx.stop_all()
+	await _frames(10)
 	print("\n%s" % ("ALL CHECKS PASSED" if _failures == 0 else "%d CHECK(S) FAILED" % _failures))
 	get_tree().quit(1 if _failures > 0 else 0)
 
