@@ -1,0 +1,9 @@
+# Godot 4 cache and import data
+.godot/
+
+# Export output (the .gdignore keeps Godot from importing exported files)
+/build/*
+!/build/.gdignore
+
+# Sensitive export credentials
+export_credentials.cfg

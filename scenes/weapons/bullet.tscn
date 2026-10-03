@@ -1,0 +1,34 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/weapons/bullet.gd" id="1_bullet"]
+
+[sub_resource type="StandardMaterial3D" id="Material_slug"]
+shading_mode = 0
+albedo_color = Color(1, 0.86, 0.55, 1)
+
+[sub_resource type="StandardMaterial3D" id="Material_trail"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(1, 0.92, 0.75, 0.35)
+
+[sub_resource type="BoxMesh" id="BoxMesh_slug"]
+material = SubResource("Material_slug")
+size = Vector3(0.03, 0.03, 0.1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_trail"]
+material = SubResource("Material_trail")
+size = Vector3(0.02, 0.02, 1)
+
+[node name="Bullet" type="Node3D"]
+script = ExtResource("1_bullet")
+
+[node name="Slug" type="MeshInstance3D" parent="."]
+cast_shadow = 0
+mesh = SubResource("BoxMesh_slug")
+
+[node name="Trail" type="Node3D" parent="."]
+
+[node name="TrailMesh" type="MeshInstance3D" parent="Trail"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.5)
+cast_shadow = 0
+mesh = SubResource("BoxMesh_trail")

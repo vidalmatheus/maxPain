@@ -1,0 +1,46 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/targets/target_dummy.gd" id="1_target"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
+radius = 0.3
+height = 1.5
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_head"]
+radius = 0.16
+
+[sub_resource type="StandardMaterial3D" id="Material_dummy"]
+albedo_color = Color(0.55, 0.13, 0.1, 1)
+roughness = 0.7
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_body"]
+material = SubResource("Material_dummy")
+radius = 0.3
+height = 1.5
+
+[sub_resource type="SphereMesh" id="SphereMesh_head"]
+material = SubResource("Material_dummy")
+radius = 0.16
+height = 0.32
+
+[node name="TargetDummy" type="RigidBody3D"]
+collision_layer = 4
+collision_mask = 15
+mass = 40.0
+script = ExtResource("1_target")
+
+[node name="BodyShape" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
+shape = SubResource("CapsuleShape3D_body")
+
+[node name="HeadShape" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.66, 0)
+shape = SubResource("SphereShape3D_head")
+
+[node name="Body" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
+mesh = SubResource("CapsuleMesh_body")
+
+[node name="Head" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.66, 0)
+mesh = SubResource("SphereMesh_head")
