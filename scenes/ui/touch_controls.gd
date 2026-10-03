@@ -35,6 +35,8 @@ var _joystick_touch := -1
 var _joystick_origin := Vector2.ZERO
 var _joystick_vector := Vector2.ZERO
 var _look_touch := -1
+## Last position of the aiming finger.
+var _look_position := Vector2.ZERO
 ## Touch index -> action held by that finger.
 var _button_touches := {}
 var _requested_fullscreen := false
@@ -68,9 +70,14 @@ func _input(event: InputEvent) -> void:
 			_set_joystick((drag.position - _joystick_origin) / JOYSTICK_RADIUS)
 			queue_redraw()
 		elif drag.index == _look_touch:
+			# Not drag.relative: in browsers Godot computes it against the
+			# previous position of whichever finger was listed first, so with
+			# the joystick held it jumps between the two fingers.
+			var moved := drag.position - _look_position
+			_look_position = drag.position
 			var player := get_tree().get_first_node_in_group(&"player") as Player
 			if player:
-				player.look(-drag.relative.x * LOOK_SENSITIVITY, -drag.relative.y * LOOK_SENSITIVITY)
+				player.look(-moved.x * LOOK_SENSITIVITY, -moved.y * LOOK_SENSITIVITY)
 
 
 func _on_touch_pressed(index: int, position: Vector2) -> void:
@@ -87,6 +94,7 @@ func _on_touch_pressed(index: int, position: Vector2) -> void:
 		_set_joystick(Vector2.ZERO)
 	else:
 		_look_touch = index
+		_look_position = position
 
 
 func _on_touch_released(index: int) -> void:

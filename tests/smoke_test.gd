@@ -209,6 +209,23 @@ func _ready() -> void:
 	_send_touch(2, look_start + Vector2(60, 0), false)
 	_check(not is_equal_approx(player.get(&"_yaw"), yaw_before_drag), "dragging on the right side aims")
 
+	# Joystick and aiming at the same time. Browsers report a bogus relative
+	# when only one of the two fingers moves; aiming must follow the
+	# aiming finger's real position.
+	_send_touch(0, stick, true)
+	_send_touch(2, look_start, true)
+	await _frames(2)
+	var yaw_two_fingers: float = player.get(&"_yaw")
+	_send_drag(0, stick + Vector2(0, -60), Vector2(500, 0))
+	await _frames(2)
+	_check(is_equal_approx(player.get(&"_yaw"), yaw_two_fingers), "moving the joystick does not turn the camera")
+	_send_drag(2, look_start + Vector2(10, 0), Vector2(800, 0))
+	await _frames(2)
+	var turned := absf(player.get(&"_yaw") - yaw_two_fingers)
+	_check(turned > 0.0 and turned < 0.1, "a small drag only turns the camera a little while moving (%.2f rad)" % turned)
+	_send_touch(0, stick, false)
+	_send_touch(2, look_start, false)
+
 	SoundFx.stop_all()
 	await _frames(10)
 	print("\n%s" % ("ALL CHECKS PASSED" if _failures == 0 else "%d CHECK(S) FAILED" % _failures))
