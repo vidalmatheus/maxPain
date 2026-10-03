@@ -35,6 +35,7 @@ func _ready() -> void:
 	var ammo_before := player.pistol.ammo_in_magazine
 	_check(player.pistol.try_fire(chest, [player.get_rid()]), "pistol fires")
 	_check(player.pistol.ammo_in_magazine == ammo_before - 1, "firing consumes ammo")
+	_check(get_tree().get_nodes_in_group(&"shell_casings").size() == 1, "firing ejects a shell casing")
 	await _frames(30)
 	_check(target.health < target.max_health, "bullet travels and damages the target")
 

@@ -26,8 +26,9 @@ signature **shootdodge**.
   in with the slowdown and sounds are slowed with it.
 - **Berettas**: a single Beretta 92FS (15 rounds, held two-handed) or **dual
   Berettas** (30 rounds, one in each hand at arm's length, firing
-  alternately). Recoil, muzzle flash and a reload where the empty magazine
-  drops out with physics. Bullets are **physical projectiles** (not hitscan),
+  alternately). Recoil, muzzle flash, spent casings ejected to the right that
+  bounce on the floor, and a reload where the empty magazine drops out with
+  physics. Bullets are **physical projectiles** (not hitscan),
   so you can watch them fly in slow motion. They knock props around.
 - **Shootdodge**: dive in any direction in slow motion, keep shooting while
   airborne, land on the ground (you can still shoot while prone) and get back
