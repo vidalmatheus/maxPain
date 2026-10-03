@@ -1,0 +1,242 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/ui/hud.gd" id="1_hud"]
+[ext_resource type="Script" path="res://scenes/ui/crosshair.gd" id="2_crosshair"]
+[ext_resource type="Shader" path="res://scenes/ui/bullet_time_overlay.gdshader" id="3_overlay"]
+[ext_resource type="Script" path="res://scenes/ui/health_figure.gd" id="4_health"]
+[ext_resource type="Script" path="res://scenes/ui/hourglass.gd" id="5_hourglass"]
+[ext_resource type="Script" path="res://scenes/ui/touch_controls.gd" id="6_touch"]
+[ext_resource type="Script" path="res://scenes/ui/painkiller_icon.gd" id="7_painkiller"]
+[ext_resource type="FontFile" path="res://assets/fonts/Oswald-Medium.ttf" id="8_font"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_overlay"]
+shader = ExtResource("3_overlay")
+shader_parameter/intensity = 0.0
+
+[node name="HUD" type="CanvasLayer"]
+script = ExtResource("1_hud")
+
+[node name="BulletTimeOverlay" type="ColorRect" parent="."]
+unique_name_in_owner = true
+visible = false
+material = SubResource("ShaderMaterial_overlay")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Crosshair" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+mouse_filter = 2
+script = ExtResource("2_crosshair")
+
+[node name="TouchControls" type="Control" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("6_touch")
+
+[node name="Status" type="Control" parent="."]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 22.0
+offset_top = -146.0
+offset_right = 142.0
+offset_bottom = -18.0
+grow_vertical = 0
+mouse_filter = 2
+
+[node name="HealthFigure" type="Control" parent="Status"]
+unique_name_in_owner = true
+anchors_preset = 0
+offset_right = 48.0
+offset_bottom = 127.0
+mouse_filter = 2
+script = ExtResource("4_health")
+
+[node name="Hourglass" type="Control" parent="Status"]
+unique_name_in_owner = true
+anchors_preset = 0
+offset_left = 58.0
+offset_top = 50.0
+offset_right = 79.0
+offset_bottom = 128.0
+mouse_filter = 2
+script = ExtResource("5_hourglass")
+
+[node name="PainkillerIcon" type="Control" parent="Status"]
+unique_name_in_owner = true
+visible = false
+anchors_preset = 0
+offset_left = 88.0
+offset_top = 106.0
+offset_right = 100.0
+offset_bottom = 127.0
+mouse_filter = 2
+script = ExtResource("7_painkiller")
+
+[node name="PainkillerLabel" type="Label" parent="Status"]
+unique_name_in_owner = true
+visible = false
+offset_left = 104.0
+offset_top = 100.0
+offset_right = 134.0
+offset_bottom = 128.0
+theme_override_colors/font_color = Color(0.9, 0.92, 0.9, 0.95)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.85)
+theme_override_font_sizes/font_size = 18
+text = "0"
+
+[node name="AmmoLabel" type="Label" parent="."]
+unique_name_in_owner = true
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -324.0
+offset_top = -92.0
+offset_right = -26.0
+offset_bottom = -54.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_colors/font_color = Color(0.84, 0.84, 0.82, 1)
+theme_override_colors/font_outline_color = Color(0.05, 0.05, 0.05, 0.8)
+theme_override_constants/outline_size = 6
+theme_override_fonts/font = ExtResource("8_font")
+theme_override_font_sizes/font_size = 28
+text = "15 + 180"
+horizontal_alignment = 2
+
+[node name="WeaponLabel" type="Label" parent="."]
+unique_name_in_owner = true
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -364.0
+offset_top = -58.0
+offset_right = -26.0
+offset_bottom = -18.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_colors/font_color = Color(0.84, 0.84, 0.82, 1)
+theme_override_colors/font_outline_color = Color(0.05, 0.05, 0.05, 0.8)
+theme_override_constants/outline_size = 6
+theme_override_fonts/font = ExtResource("8_font")
+theme_override_font_sizes/font_size = 28
+text = "Beretta"
+horizontal_alignment = 2
+
+[node name="ReloadLabel" type="Label" parent="."]
+unique_name_in_owner = true
+visible = false
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -244.0
+offset_top = -116.0
+offset_right = -26.0
+offset_bottom = -92.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_colors/font_color = Color(0.95, 0.8, 0.55, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.85)
+theme_override_font_sizes/font_size = 13
+text = "Reloading"
+horizontal_alignment = 2
+
+[node name="HelpHint" type="Label" parent="."]
+unique_name_in_owner = true
+offset_left = 16.0
+offset_top = 12.0
+offset_right = 316.0
+offset_bottom = 34.0
+theme_override_colors/font_color = Color(1, 1, 1, 0.55)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.8)
+theme_override_font_sizes/font_size = 13
+text = "F1: controls"
+
+[node name="HelpLabel" type="Label" parent="."]
+unique_name_in_owner = true
+visible = false
+offset_left = 16.0
+offset_top = 36.0
+offset_right = 516.0
+offset_bottom = 216.0
+theme_override_colors/font_color = Color(1, 1, 1, 0.85)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.8)
+theme_override_font_sizes/font_size = 14
+
+[node name="CaptureHint" type="Label" parent="."]
+unique_name_in_owner = true
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -160.0
+offset_top = 40.0
+offset_right = 160.0
+offset_bottom = 72.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.8)
+theme_override_font_sizes/font_size = 20
+text = "Click to play"
+horizontal_alignment = 1
+
+[node name="ToastLabel" type="Label" parent="."]
+unique_name_in_owner = true
+visible = false
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -260.0
+offset_top = 96.0
+offset_right = 260.0
+offset_bottom = 124.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(0.95, 0.8, 0.55, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.8)
+theme_override_font_sizes/font_size = 18
+text = "Controller connected"
+horizontal_alignment = 1
+
+[node name="RotateOverlay" type="ColorRect" parent="."]
+unique_name_in_owner = true
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.03, 0.03, 0.04, 0.94)
+
+[node name="RotateLabel" type="Label" parent="RotateOverlay"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(0.95, 0.95, 0.93, 1)
+theme_override_font_sizes/font_size = 64
+text = "Rotate your device
+to play in landscape"
+horizontal_alignment = 1
+vertical_alignment = 1

@@ -1,0 +1,36 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/levels/street_level.gd" id="1_level"]
+[ext_resource type="Script" path="res://scenes/levels/snowfall.gd" id="2_snow"]
+
+[sub_resource type="Environment" id="Environment_night"]
+background_mode = 1
+background_color = Color(0.025, 0.03, 0.045, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.3, 0.34, 0.45, 1)
+ambient_light_energy = 0.55
+tonemap_mode = 2
+glow_enabled = true
+glow_intensity = 0.7
+glow_bloom = 0.08
+fog_enabled = true
+fog_light_color = Color(0.07, 0.08, 0.11, 1)
+fog_density = 0.022
+
+[node name="Street" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_night")
+
+[node name="Moonlight" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.8660254, -0.38302222, 0.32139382, 0, 0.64278764, 0.76604444, -0.5, -0.66341394, 0.5566704, 0, 20, 0)
+light_color = Color(0.62, 0.7, 1, 1)
+light_energy = 0.35
+shadow_enabled = true
+directional_shadow_max_distance = 40.0
+
+[node name="Level" type="Node3D" parent="."]
+script = ExtResource("1_level")
+
+[node name="Snowfall" type="CPUParticles3D" parent="."]
+script = ExtResource("2_snow")

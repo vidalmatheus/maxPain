@@ -1,0 +1,389 @@
+extends Node
+## Headless smoke test for the core mechanics.
+##
+## Run with:  godot --headless --path . res://tests/smoke_test.tscn
+## Exits with code 0 when every check passes, 1 otherwise.
+
+const MAIN_SCENE := preload("res://scenes/main.tscn")
+const SURVIVAL_SCENE := preload("res://scenes/game/survival.tscn")
+const TITLE_SCENE := preload("res://scenes/title/title_screen.tscn")
+
+var _failures := 0
+
+
+func _ready() -> void:
+	var main := MAIN_SCENE.instantiate()
+	add_child(main)
+	await _frames(30)
+
+	var bullet_time := BulletTime
+	var player: Player = main.get_node("Player")
+	# Target3 has a clear line of fire from the spawn point.
+	var target: TargetDummy = main.get_node("Targets/Target3")
+	var sounds: Array[AudioStream] = []
+	SoundFx.played.connect(func(stream: AudioStream) -> void: sounds.append(stream))
+
+	_check(player.is_on_floor(), "player lands on the floor")
+	_check(_gun_aim_error(player) < 4.0, "the pistol points at the crosshair (%.1f deg off)" % _gun_aim_error(player))
+	_check(player.state == Player.State.NORMAL, "player starts in NORMAL state")
+
+	# --- Walking -------------------------------------------------------------
+	var start := player.global_position
+	Input.action_press(&"move_forward")
+	await _frames(40)
+	Input.action_release(&"move_forward")
+	_check(player.global_position.z < start.z - 1.0, "player walks forward (-Z)")
+
+	# --- Shooting: bullets travel and damage targets ------------------------
+	player.pistol.spread_degrees = 0.0  # Deterministic shots.
+	var chest := target.global_position + Vector3(0.0, 1.0, 0.0)
+	var ammo_before := player.pistol.ammo_in_magazine
+	_check(player.pistol.try_fire(chest, [player.get_rid()]), "pistol fires")
+	_check(player.pistol.ammo_in_magazine == ammo_before - 1, "firing consumes ammo")
+	_check(get_tree().get_nodes_in_group(&"shell_casings").size() == 1, "firing ejects a shell casing")
+	_check(GunModel.SHOT_SOUND in sounds, "firing plays a gunshot")
+	await _frames(60)
+	_check(GunModel.CASING_SOUNDS.any(func(s: AudioStream) -> bool: return s in sounds), "the casing clinks on the floor")
+	_check(target.health < target.max_health, "bullet travels and damages the target")
+
+	# Kill it and check the adrenaline reward.
+	bullet_time.adrenaline = 50.0
+	for i in 5:
+		await _frames(12)
+		player.pistol.try_fire(chest, [player.get_rid()])
+	await _frames(30)
+	_check(target.is_dead, "target dies after enough hits")
+	_check(bullet_time.adrenaline > 50.0, "kill rewards adrenaline")
+
+	# --- Bullet time toggle ---------------------------------------------------
+	bullet_time.adrenaline = bullet_time.max_adrenaline
+	bullet_time.toggle()
+	await _frames(30)
+	_check(bullet_time.is_active, "bullet time activates")
+	_check(Engine.time_scale < 0.5, "time scale slows down (%.2f)" % Engine.time_scale)
+	_check(SoundFx.is_bullet_time_loop_playing() and SoundFx.is_world_muffled(), "bullet time drones and muffles the world")
+	bullet_time.toggle()
+	await _frames(30)
+	_check(not bullet_time.is_active, "bullet time deactivates")
+	_check(is_equal_approx(Engine.time_scale, 1.0), "time scale returns to 1.0")
+	_check(not SoundFx.is_bullet_time_loop_playing() and not SoundFx.is_world_muffled(), "normal speed sounds normal again")
+
+	# --- Shootdodge -----------------------------------------------------------
+	Input.action_press(&"move_left")
+	await _frames(2)
+	player.call(&"_try_shootdodge")
+	_check(player.state == Player.State.DIVING, "shootdodge starts a dive")
+	_check(bullet_time.is_active, "shootdodge triggers bullet time")
+	await _frames(10)
+	_check(not player.is_on_floor(), "player is airborne during the dive")
+	_check(_gun_aim_error(player) < 6.0, "the pistol points at the crosshair mid-dive (%.1f deg off)" % _gun_aim_error(player))
+	_check(player.pistol.try_fire(player.global_position + Vector3(0, 1, -20), [player.get_rid()]), "can fire while diving")
+	Input.action_release(&"move_left")
+
+	var waited := 0
+	while player.state == Player.State.DIVING and waited < 600:
+		await _frames(1)
+		waited += 1
+	_check(player.state == Player.State.PRONE, "dive ends prone on the ground")
+	_check(not bullet_time.is_active, "landing ends shootdodge bullet time")
+
+	# Getting up.
+	await _frames(40)
+	Input.action_press(&"move_forward")
+	await _frames(60)
+	Input.action_release(&"move_forward")
+	_check(player.state == Player.State.NORMAL, "player gets back up")
+
+	# --- Gamepad ------------------------------------------------------------------
+	_check(GameInput.detect_layout("DualSense Wireless Controller") == GameInput.Layout.PLAYSTATION, "detects a DualSense (PS5)")
+	_check(GameInput.detect_layout("PS4 Controller") == GameInput.Layout.PLAYSTATION, "detects a DualShock 4 (PS4)")
+	_check(GameInput.detect_layout("Unknown", {"vendor_id": 1356}) == GameInput.Layout.PLAYSTATION, "detects Sony by USB vendor id")
+	_check(GameInput.detect_layout("Xbox Series X Controller") == GameInput.Layout.XBOX, "detects an Xbox controller")
+	_check(GameInput.detect_layout("Generic USB Gamepad") == GameInput.Layout.XBOX, "unknown pads use Xbox prompts")
+
+	# Holding the trigger fires once (semi-automatic), even though an analog
+	# trigger keeps sending motion events while held.
+	player.pistol.reload()
+	await _frames(120)
+	var ammo_start := player.pistol.ammo_in_magazine
+	for value in [0.4, 0.8, 1.0, 0.97, 1.0, 0.98, 1.0, 0.97, 1.0, 0.99]:
+		_send_axis(JOY_AXIS_TRIGGER_RIGHT, value)
+		await _frames(6)
+	_check(player.pistol.ammo_in_magazine == ammo_start - 1, "holding the trigger fires a single shot")
+	_check(GameInput.is_using_gamepad(), "gamepad input switches the active layout")
+	_check(GameInput.prompt(&"fire") == "RT", "prompts follow the gamepad layout")
+	_send_axis(JOY_AXIS_TRIGGER_RIGHT, 0.0)
+	await _frames(6)
+	_send_axis(JOY_AXIS_TRIGGER_RIGHT, 1.0)
+	await _frames(6)
+	_send_axis(JOY_AXIS_TRIGGER_RIGHT, 0.0)
+	await _frames(2)
+	_check(player.pistol.ammo_in_magazine == ammo_start - 2, "pulling the trigger again fires again")
+
+	# Right stick aims.
+	var yaw_before: float = player.get(&"_yaw")
+	_send_axis(JOY_AXIS_RIGHT_X, 1.0)
+	await _frames(20)
+	_send_axis(JOY_AXIS_RIGHT_X, 0.0)
+	await _frames(2)
+	_check(player.get(&"_yaw") < yaw_before - 0.1, "right stick turns the camera")
+
+	# Keyboard input switches the prompts back.
+	var key := InputEventKey.new()
+	key.physical_keycode = KEY_W
+	key.pressed = true
+	Input.parse_input_event(key)
+	await _frames(2)
+	key = key.duplicate()
+	key.pressed = false
+	Input.parse_input_event(key)
+	await _frames(2)
+	_check(not GameInput.is_using_gamepad(), "keyboard input switches back to keyboard prompts")
+
+	# --- Reload -----------------------------------------------------------------
+	player.pistol.reload()
+	_check(player.pistol.is_reloading(), "reload starts")
+	await _frames(120)
+	_check(player.pistol.ammo_in_magazine == player.pistol.magazine_size, "reload refills the magazine")
+	_check(Pistol.MAGAZINE_OUT_SOUND in sounds and Pistol.MAGAZINE_IN_SOUND in sounds, "reloading plays the magazine sounds")
+
+	# --- Dual Berettas -----------------------------------------------------------
+	_check(player.pistol.magazine_size == 15, "a Beretta magazine holds 15 rounds")
+	var shooters: Array[GunModel] = []
+	player.pistol.fired.connect(func(gun: GunModel) -> void: shooters.append(gun))
+	var key_2 := InputEventKey.new()
+	key_2.physical_keycode = KEY_2
+	key_2.pressed = true
+	Input.parse_input_event(key_2)
+	await _frames(2)
+	key_2 = key_2.duplicate()
+	key_2.pressed = false
+	Input.parse_input_event(key_2)
+	await _frames(30)
+	_check(player.pistol.dual, "key 2 switches to dual Berettas")
+	_check(player.pistol.ammo_in_magazine == 30, "dual Berettas hold 30 rounds")
+	_check(player.pistol.left_gun.visible, "the second Beretta appears in the left hand")
+	for i in 2:
+		player.pistol.try_fire(chest, [player.get_rid()])
+		await _frames(8)
+	_check(shooters.size() == 2 and shooters[0] != shooters[1], "dual Berettas fire alternately")
+	player.pistol.reload()
+	await _frames(2)
+	_check(get_tree().get_nodes_in_group(&"dropped_magazines").size() >= 2, "reloading drops both magazines")
+	_check(not player.pistol.left_gun.has_magazine(), "guns are empty while reloading")
+	await _frames(150)
+	_check(player.pistol.ammo_in_magazine == 30, "dual reload refills both magazines")
+	_check(player.pistol.right_gun.has_magazine() and player.pistol.left_gun.has_magazine(), "fresh magazines are inserted")
+
+	# --- Touch controls -----------------------------------------------------------
+	var touch: TouchControls = main.get_node("HUD/TouchControls")
+	var stick := Vector2(200.0, touch.size.y - 150.0)
+	_send_touch(0, stick, true)
+	await _frames(2)
+	_check(GameInput.is_using_touch() and touch.visible, "touching the screen shows the touch controls")
+	var touch_start := player.global_position
+	_send_drag(0, stick + Vector2(0, -80), Vector2(0, -80))
+	await _frames(30)
+	_check(player.global_position.distance_to(touch_start) > 0.5, "the touch joystick moves the player")
+	_send_touch(0, stick + Vector2(0, -80), false)
+	await _frames(10)
+
+	# Mobile browsers send emulated mouse events after touches: they must not
+	# switch away from the touch controls. (Emulated clicks are blocked in the
+	# web page itself, see html/head_include in export_presets.cfg.)
+	var emulated := InputEventMouseMotion.new()
+	emulated.relative = Vector2(40, 20)
+	Input.parse_input_event(emulated)
+	await _frames(2)
+	_check(GameInput.is_using_touch() and touch.visible, "emulated mouse events after a touch keep the touch controls")
+
+	var fire_button := touch.size + Vector2(-150, -190)
+	var ammo_before_tap := player.pistol.ammo_in_magazine
+	_send_touch(1, fire_button, true)
+	await _frames(2)
+	_send_touch(1, fire_button, false)
+	await _frames(2)
+	_check(player.pistol.ammo_in_magazine == ammo_before_tap - 1, "the FIRE button shoots")
+
+	var yaw_before_drag: float = player.get(&"_yaw")
+	var look_start := Vector2(touch.size.x * 0.7, touch.size.y * 0.4)
+	_send_touch(2, look_start, true)
+	_send_drag(2, look_start + Vector2(60, 0), Vector2(60, 0))
+	await _frames(2)
+	_send_touch(2, look_start + Vector2(60, 0), false)
+	_check(not is_equal_approx(player.get(&"_yaw"), yaw_before_drag), "dragging on the right side aims")
+
+	# Joystick and aiming at the same time. Browsers report a bogus relative
+	# when only one of the two fingers moves; aiming must follow the
+	# aiming finger's real position.
+	_send_touch(0, stick, true)
+	_send_touch(2, look_start, true)
+	await _frames(2)
+	var yaw_two_fingers: float = player.get(&"_yaw")
+	_send_drag(0, stick + Vector2(0, -60), Vector2(500, 0))
+	await _frames(2)
+	_check(is_equal_approx(player.get(&"_yaw"), yaw_two_fingers), "moving the joystick does not turn the camera")
+	_send_drag(2, look_start + Vector2(10, 0), Vector2(800, 0))
+	await _frames(2)
+	var turned := absf(player.get(&"_yaw") - yaw_two_fingers)
+	_check(turned > 0.0 and turned < 0.1, "a small drag only turns the camera a little while moving (%.2f rad)" % turned)
+	_send_touch(0, stick, false)
+	_send_touch(2, look_start, false)
+	main.queue_free()
+	await _frames(2)
+
+	await _test_survival()
+	await _test_title_screen()
+
+	SoundFx.stop_all()
+	Music.stop()
+	# Let the music fade out: quitting while sounds play leaks them.
+	await get_tree().create_timer(Music.FADE_TIME + 0.3).timeout
+	print("\n%s" % ("ALL CHECKS PASSED" if _failures == 0 else "%d CHECK(S) FAILED" % _failures))
+	get_tree().quit(1 if _failures > 0 else 0)
+
+
+func _test_survival() -> void:
+	Game.difficulty = Game.Difficulty.HARD_BOILED
+	var game: Survival = SURVIVAL_SCENE.instantiate()
+	add_child(game)
+	var player := game.player
+	await _frames(5)
+	_check(game.wave_size(1) == 3 and game.wave_size(2) == 5, "each wave brings two more mobsters")
+	_check(player.painkillers == 2, "Max starts with painkillers")
+
+	# --- Waves and enemies -------------------------------------------------------
+	game.break_left = 0.05
+	await _frames(90)
+	_check(game.wave == 1, "the first wave starts")
+	var enemies := get_tree().get_nodes_in_group(&"enemies")
+	_check(enemies.size() >= 1, "mobsters enter the street")
+	# Bring one into the open in front of Max to save time.
+	var shooter := enemies[0] as Enemy
+	shooter.global_position = player.global_position + Vector3(0, 0, -10)
+	var waited := 0
+	while player.health >= player.max_health and waited < 900:
+		await _frames(1)
+		waited += 1
+	_check(player.health < player.max_health, "mobsters shoot Max (health %.0f)" % player.health)
+
+	# --- Kills, drops and pickups ------------------------------------------------
+	var reserve := player.pistol.reserve_ammo
+	shooter.take_hit(1000.0, shooter.global_position + Vector3(0, 1.2, 0), Vector3.FORWARD)
+	_check(shooter.state == Enemy.State.DEAD, "a mobster dies")
+	_check(game.kills == 1, "kills are counted")
+	await _frames(2)
+	var ammo: Pickup = null
+	for pickup: Pickup in get_tree().get_nodes_in_group(&"pickups"):
+		if pickup.kind == Pickup.Kind.AMMO:
+			ammo = pickup
+	_check(ammo != null, "dead mobsters drop ammo")
+	if ammo:
+		player.global_position = ammo.global_position
+		await _frames(10)
+		_check(player.pistol.reserve_ammo > reserve, "walking over ammo picks it up")
+
+	# Clear the wave: kill every mobster, including the ones still to come.
+	waited = 0
+	while game.remaining() > 0 and waited < 1200:
+		for enemy: Enemy in get_tree().get_nodes_in_group(&"enemies"):
+			enemy.take_hit(1000.0, enemy.global_position + Vector3(0, 1.2, 0), Vector3.FORWARD)
+		await _frames(1)
+		waited += 1
+	_check(game.remaining() == 0 and game.break_left > 14.0, "the next wave comes 15 s after a wave is cleared")
+
+	# Heal between waves, with nobody shooting: wait for stray bullets, and
+	# clear the drops so none is picked up meanwhile.
+	for pickup in get_tree().get_nodes_in_group(&"pickups"):
+		pickup.queue_free()
+	await get_tree().create_timer(1.0).timeout
+	var hurt_health := player.health
+	var bottles := player.painkillers
+	_check(player.use_painkiller(), "Max takes a painkiller")
+	await get_tree().create_timer(1.4).timeout
+	_check(player.health > hurt_health and player.painkillers == bottles - 1,
+			"painkillers heal (%.0f -> %.0f)" % [hurt_health, player.health])
+
+	# --- Cover -----------------------------------------------------------------------
+	# The concrete barrier at (-2.5, 12) is waist high; stand east of it, facing west.
+	player.global_position = Vector3(-1.4, 0.05, 12.0)
+	player.set(&"_yaw", PI * 0.5)
+	await _frames(10)
+	_check(player.try_take_cover(), "Max takes cover behind a barrier")
+	await _frames(30)
+	_check(player.state == Player.State.COVER and player.is_crouching(), "Max ducks behind low cover")
+	player.call(&"_fire")
+	await _frames(2)
+	_check(not player.is_crouching(), "shooting from cover pops Max up")
+	await _frames(30)
+	_check(player.pistol.ammo_in_magazine < player.pistol.magazine_size, "the shot from cover is fired")
+
+	# --- Death -----------------------------------------------------------------------
+	var game_over := [false]
+	game.game_over.connect(func(_wave: int, _kills: int, _record: bool) -> void: game_over[0] = true)
+	player.take_hit(1000.0, player.global_position + Vector3(0, 1.2, 0), Vector3.FORWARD)
+	_check(player.state == Player.State.DEAD, "Max dies")
+	await get_tree().create_timer(3.0).timeout
+	_check(game_over[0], "the game over screen comes up")
+	game.queue_free()
+	await _frames(2)
+
+
+func _test_title_screen() -> void:
+	var title: TitleScreen = TITLE_SCENE.instantiate()
+	add_child(title)
+	await _frames(5)
+	var before := Game.difficulty
+	title.call(&"_cycle_difficulty", 1)
+	_check(Game.difficulty != before, "the title screen changes the difficulty")
+	title.call(&"_cycle_difficulty", -1)
+	_check(Game.difficulty == before, "and changes it back")
+	title.queue_free()
+	await _frames(2)
+
+
+## Touch events arrive in window coordinates; [param position] is given in
+## canvas (UI) coordinates and converted, like a real screen would report it.
+func _send_touch(index: int, position: Vector2, pressed: bool) -> void:
+	var event := InputEventScreenTouch.new()
+	event.index = index
+	event.position = get_viewport().get_final_transform() * position
+	event.pressed = pressed
+	Input.parse_input_event(event)
+
+
+func _send_drag(index: int, position: Vector2, relative: Vector2) -> void:
+	var to_window := get_viewport().get_final_transform()
+	var event := InputEventScreenDrag.new()
+	event.index = index
+	event.position = to_window * position
+	event.relative = to_window.basis_xform(relative)
+	Input.parse_input_event(event)
+
+
+func _send_axis(axis: JoyAxis, value: float) -> void:
+	var motion := InputEventJoypadMotion.new()
+	motion.device = 0
+	motion.axis = axis
+	motion.axis_value = value
+	Input.parse_input_event(motion)
+
+
+## Angle in degrees between where the right pistol points and the crosshair.
+func _gun_aim_error(player: Player) -> float:
+	var gun := player.pistol.right_gun
+	var to_aim := player.aim_point - gun.muzzle.global_position
+	return rad_to_deg((-gun.global_basis.z).angle_to(to_aim))
+
+
+func _frames(count: int) -> void:
+	for i in count:
+		await get_tree().physics_frame
+
+
+func _check(condition: bool, description: String) -> void:
+	if condition:
+		print("  ok    %s" % description)
+	else:
+		_failures += 1
+		print("  FAIL  %s" % description)

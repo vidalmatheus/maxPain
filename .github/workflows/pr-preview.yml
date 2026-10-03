@@ -1,0 +1,75 @@
+# Playable preview of each pull request, separate from the main site:
+#   https://<user>.github.io/<repo>/pr-preview/pr-<N>/
+# The game is exported from the PR's code and published in a subfolder of the
+# gh-pages branch, together with screenshots of the core mechanics in
+# .../pr-preview/pr-<N>/shots/. The link is commented on the PR automatically
+# and the preview is removed when the PR is closed or merged.
+#
+# Requires (once): Settings -> Pages -> Source: "Deploy from a branch" ->
+# gh-pages / (root). PRs from forks have no write permission, so they don't
+# get a preview.
+name: PR preview (playable build)
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, closed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency: preview-${{ github.ref }}
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ./.github/actions/setup-godot
+        if: github.event.action != 'closed'
+
+      - name: Import project
+        if: github.event.action != 'closed'
+        run: godot --headless --path . --import > /dev/null
+
+      - name: Smoke test (headless)
+        if: github.event.action != 'closed'
+        timeout-minutes: 5
+        run: godot --headless --path . res://tests/smoke_test.tscn
+
+      - name: Export the web build
+        if: github.event.action != 'closed'
+        run: tools/export.sh web
+
+      # Renders the core mechanics on a virtual display (software OpenGL) and
+      # publishes the screenshots with the preview in .../pr-preview/pr-<N>/shots/
+      - name: Screenshots
+        if: github.event.action != 'closed'
+        timeout-minutes: 5
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q xvfb libgl1-mesa-dri > /dev/null
+          xvfb-run -a -s "-screen 0 1280x720x24" \
+            godot --path . --rendering-driver opengl3 --resolution 1280x720 \
+            res://tests/screenshots.tscn -- --output="$PWD/build/web/shots"
+          test -f build/web/shots/index.html
+
+      - id: preview
+        uses: rossjrw/pr-preview-action@v1
+        with:
+          source-dir: build/web
+          preview-branch: gh-pages
+          umbrella-dir: pr-preview
+          action: auto
+
+      - name: Link the screenshots in the job summary
+        if: github.event.action != 'closed'
+        env:
+          PREVIEW_URL: ${{ steps.preview.outputs.preview-url }}
+        run: |
+          {
+            echo "### Preview"
+            echo "- Play: ${PREVIEW_URL}"
+            echo "- Screenshots: ${PREVIEW_URL%/}/shots/"
+          } >> "$GITHUB_STEP_SUMMARY"

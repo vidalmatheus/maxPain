@@ -1,0 +1,9 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/player/character_model.gd" id="1_model"]
+[ext_resource type="PackedScene" path="res://assets/characters/max_payne/max_payne_rigged.scn" id="2_rig"]
+
+[node name="CharacterModel" type="Node3D"]
+script = ExtResource("1_model")
+
+[node name="MaxPayne" parent="." instance=ExtResource("2_rig")]

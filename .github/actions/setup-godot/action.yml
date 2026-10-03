@@ -1,0 +1,48 @@
+name: Set up Godot
+description: Installs Godot and the export templates we use (cached between runs) and puts `godot` on the PATH.
+
+inputs:
+  version:
+    description: Godot stable version to install.
+    default: "4.7.2"
+
+runs:
+  using: composite
+  steps:
+    - name: Cache Godot and export templates
+      id: cache
+      uses: actions/cache@v6
+      with:
+        path: |
+          ~/godot
+          ~/.local/share/godot/export_templates
+        key: godot-${{ inputs.version }}
+
+    - name: Install Godot and export templates
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      env:
+        GODOT_VERSION: ${{ inputs.version }}
+      run: |
+        base="https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable"
+        mkdir -p ~/godot
+        curl -fsSL -o godot.zip "$base/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+        unzip -q godot.zip -d ~/godot
+        mv ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 ~/godot/godot
+
+        # Only extract the templates we use; the full archive is ~1.3 GB.
+        curl -fsSL -o templates.tpz "$base/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+        templates_dir=~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+        mkdir -p "$templates_dir"
+        unzip -q -j templates.tpz \
+          templates/version.txt \
+          templates/web_nothreads_release.zip \
+          templates/linux_release.x86_64 \
+          templates/windows_release_x86_64.exe \
+          templates/macos.zip \
+          -d "$templates_dir"
+        rm godot.zip templates.tpz
+
+    - name: Add Godot to the PATH
+      shell: bash
+      run: echo "$HOME/godot" >> "$GITHUB_PATH"

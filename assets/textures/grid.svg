@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <!-- Neutral prototype grid: tinted per material via albedo_color. -->
+  <rect width="128" height="128" fill="#8c8c8c"/>
+  <rect width="64" height="64" fill="#969696"/>
+  <rect x="64" y="64" width="64" height="64" fill="#969696"/>
+  <path d="M0 0H128V128H0Z" fill="none" stroke="#5c5c5c" stroke-width="4"/>
+  <path d="M64 0V128M0 64H128" stroke="#737373" stroke-width="2"/>
+</svg>
