@@ -1,12 +1,14 @@
 # Max Pain
 
-A fan-made, Max Payne inspired third-person shooter prototype built with
-[Godot 4](https://godotengine.org) (GDScript). The current focus is nailing the
-core character mechanics: running, aiming, shooting, bullet time and the
-signature **shootdodge**.
+A fan-made, Max Payne inspired third-person shooter built with
+[Godot 4](https://godotengine.org) (GDScript): a **survival mode** on a snowy
+New York street at night, where waves of mobsters come for Max and he fights
+back with bullet time, **shootdodges** and cover.
 
-| Bullet time | Shootdodge |
+| Title | Survival |
 |---|---|
+| ![Title screen](docs/screenshots/title.png) | ![Survival](docs/screenshots/survival.png) |
+| **Bullet time** | **Shootdodge** |
 | ![Bullet time](docs/screenshots/bullet_time.png) | ![Shootdodge](docs/screenshots/shootdodge.png) |
 
 > Max Payne is a trademark of Remedy Entertainment / Rockstar Games. This is a
@@ -15,6 +17,27 @@ signature **shootdodge**.
 
 ## Features
 
+- **Survival mode**: waves of mobsters come in from the ends of the streets.
+  Each wave brings two more than the last, and the next one starts 15 seconds
+  after the last mobster of a wave dies. Dead mobsters drop ammo, and
+  sometimes adrenaline (bullet time) or painkillers. The best wave per
+  difficulty is saved.
+- **Mobsters that shoot back**: they run along a navigation mesh until they
+  see Max, then fire in bursts with a reaction delay; hurt ones run for cover
+  on the far side of a car or barrier, duck and pop up to shoot. A shootdodging
+  Max is much harder to hit. Headshots deal triple damage.
+- **Difficulty levels** named after the original's: *Fugitive*, *Hard-Boiled*
+  and *Dead on Arrival* (enemy health, damage, accuracy, reaction time, wave
+  size and drops).
+- **Cover**: stick to walls, cars and concrete barriers; crouch behind low
+  cover, pop up to shoot and slide along it.
+- **Health and painkillers**: the HUD silhouette fills with red as Max gets
+  hurt; painkillers heal over a moment, like in the original.
+- **The street**: a snowy intersection at night with parked cars, police cars
+  with flashing lights, street lamps, dumpsters and concrete barriers, built
+  from Kenney's city and car kits.
+- **Title screen** with music, difficulty selection, a training range (the
+  practice targets) and the controls; a pause menu and a game over screen.
 - **Animated Max Payne** model with Max Payne 3 style upper/lower body
   blending: the legs run in the movement direction (forwards or backwards)
   while the spine twists so the upper body always faces the aim. Arm IK keeps
@@ -68,10 +91,12 @@ switch automatically to the device you are using.
 | Bullet time (toggle) | Shift or Q | LB or R3 (click) | L1 or R3 (click) |
 | Jump | Space | A | Cross |
 | Reload | R | X | Square |
-| Beretta / dual Berettas | 1 / 2 / mouse wheel | Y / D-pad | Triangle / D-pad |
-| Help | F1 | Menu / View | Options / Create |
+| Beretta / dual Berettas | 1 / 2 / mouse wheel | Y / D-pad left/right | Triangle / D-pad left/right |
+| Take cover / leave cover | C or Ctrl | B | Circle |
+| Painkiller | H or E | D-pad up | D-pad up |
+| Pause | Esc or P | Menu | Options |
+| Help | F1 | View | Create |
 | Fullscreen | F11 | | |
-| Release mouse | Esc | | |
 
 The shootdodge button while standing still toggles bullet time, like in the
 original game.
@@ -79,7 +104,8 @@ original game.
 On phones and tablets the touch controls appear automatically: a floating
 joystick on the left half of the screen to move, drag anywhere on the right
 half to aim, and buttons for FIRE, DODGE (shootdodge with the joystick held in
-a direction), SLOW (bullet time), JUMP, RELOAD and GUN (one or two Berettas).
+a direction), SLOW (bullet time), JUMP, RELOAD, GUN (one or two Berettas),
+COVER and PILL (painkiller), plus II at the top right to pause.
 The game goes fullscreen in landscape on the first touch; on iPhones, which
 don't allow locking the orientation from the browser, just rotate the phone.
 
@@ -159,10 +185,11 @@ python3 -m http.server -d build/web
 
 ## Tests
 
-A headless smoke test drives the main scene and checks walking, shooting
-(and that the pistol points at the crosshair), kills, bullet time,
-shootdodge, reloading, sounds and the touch controls. It exits with code 0 when every
-check passes:
+A headless smoke test drives the training range and checks walking,
+shooting (and that the pistol points at the crosshair), kills, bullet time,
+shootdodge, reloading, sounds and the touch controls; then a survival game
+(waves, mobsters shooting Max, drops and pickups, painkillers, cover, death)
+and the title screen. It exits with code 0 when every check passes:
 
 ```sh
 godot --headless --path . res://tests/smoke_test.tscn
@@ -204,24 +231,34 @@ godot --headless --path . -s tools/build_character.gd -- --source=<animation pac
 ```
 autoload/
   bullet_time.gd       Global slow-motion controller and adrenaline meter
+  game.gd              Difficulty, scene changes, saved best waves
   game_input.gd        Default input bindings (keyboard, mouse, gamepad)
+  music.gd             Background music with crossfades
   sound_fx.gd          Sound effects and the bullet-time soundscape
 scenes/
-  main.tscn            Test arena
+  title/               Title screen (the main scene)
+  game/                Survival mode: waves of enemies
+  levels/              The street at night (built in code), snow, police lights
+  enemies/             Mobster AI
+  pickups/             Ammo, adrenaline and painkillers dropped by enemies
+  main.tscn            Training range with practice targets
   player/              Player controller, camera and animated character model
   weapons/             Pistol and bullet
   targets/             Practice target dummy
   props/               Physics crate
   fx/                  Impact particles
-  ui/                  HUD, crosshair and bullet-time screen shader
+  ui/                  HUD, crosshair, bullet-time shader, menus
 tests/                 Headless smoke test and screenshot sequence
 assets/characters/     Character model, rig and animations (see its README)
 assets/weapons/        Weapon models (see their READMEs)
 assets/fonts/          HUD font and its license
 assets/sounds/         Sound effects (CC0, see its README)
+assets/music/          Music (CC BY 4.0, see its README)
+assets/environment/    Street, buildings and cars (CC0, see its README)
 tools/export.sh        Exports builds into build/<platform>/
 tools/build_character.gd  Rigs the character and extracts its animations
 tools/prepare_sounds.sh   Cuts the sound effects out of their source packs
+tools/prepare_music.sh    Converts the music (and its short loops for the web)
 .github/               CI: Pages deploy, PR previews, releases
 ```
 
@@ -235,8 +272,10 @@ Physics layers: `1 world`, `2 player`, `3 enemies`, `4 props`.
 - [x] Shootdodge
 - [x] Animated character model
 - [x] Sound effects
-- [ ] Music
-- [ ] Enemy AI that shoots back, player health and painkillers
+- [x] Music
+- [x] Enemy AI that shoots back, player health and painkillers
+- [x] Survival mode with waves, difficulty levels and a title screen
+- [x] Cover
 - [x] Dual Berettas
 - [ ] More weapons (shotgun, Desert Eagle, Ingram, ...)
 - [ ] Bullet cam on the last kill
@@ -261,3 +300,10 @@ Physics layers: `1 world`, `2 player`, `3 enemies`, `4 props`.
   (Ben Jaszczak et al.), SpringySpringo and MidFag on
   [OpenGameArt](https://opengameart.org), all CC0; see
   [assets/sounds/README.md](assets/sounds/README.md).
+- **Music:** "Sad Trio" and "Hitman" by Kevin MacLeod
+  ([incompetech.com](https://incompetech.com)), licensed under
+  [Creative Commons: By Attribution 4.0](https://creativecommons.org/licenses/by/4.0/).
+- **Street, buildings and cars:** Car Kit, City Kit (Roads) and City Kit
+  (Commercial) by [Kenney](https://kenney.nl), CC0; see
+  [assets/environment/README.md](assets/environment/README.md).
+- **Enemies** reuse the Max model with recolored clothes.

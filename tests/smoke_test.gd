@@ -5,6 +5,8 @@ extends Node
 ## Exits with code 0 when every check passes, 1 otherwise.
 
 const MAIN_SCENE := preload("res://scenes/main.tscn")
+const SURVIVAL_SCENE := preload("res://scenes/game/survival.tscn")
+const TITLE_SCENE := preload("res://scenes/title/title_screen.tscn")
 
 var _failures := 0
 
@@ -227,11 +229,117 @@ func _ready() -> void:
 	_check(turned > 0.0 and turned < 0.1, "a small drag only turns the camera a little while moving (%.2f rad)" % turned)
 	_send_touch(0, stick, false)
 	_send_touch(2, look_start, false)
+	main.queue_free()
+	await _frames(2)
+
+	await _test_survival()
+	await _test_title_screen()
 
 	SoundFx.stop_all()
-	await _frames(10)
+	Music.stop()
+	# Let the music fade out: quitting while sounds play leaks them.
+	await get_tree().create_timer(Music.FADE_TIME + 0.3).timeout
 	print("\n%s" % ("ALL CHECKS PASSED" if _failures == 0 else "%d CHECK(S) FAILED" % _failures))
 	get_tree().quit(1 if _failures > 0 else 0)
+
+
+func _test_survival() -> void:
+	Game.difficulty = Game.Difficulty.HARD_BOILED
+	var game: Survival = SURVIVAL_SCENE.instantiate()
+	add_child(game)
+	var player := game.player
+	await _frames(5)
+	_check(game.wave_size(1) == 3 and game.wave_size(2) == 5, "each wave brings two more mobsters")
+	_check(player.painkillers == 2, "Max starts with painkillers")
+
+	# --- Waves and enemies -------------------------------------------------------
+	game.break_left = 0.05
+	await _frames(90)
+	_check(game.wave == 1, "the first wave starts")
+	var enemies := get_tree().get_nodes_in_group(&"enemies")
+	_check(enemies.size() >= 1, "mobsters enter the street")
+	# Bring one into the open in front of Max to save time.
+	var shooter := enemies[0] as Enemy
+	shooter.global_position = player.global_position + Vector3(0, 0, -10)
+	var waited := 0
+	while player.health >= player.max_health and waited < 900:
+		await _frames(1)
+		waited += 1
+	_check(player.health < player.max_health, "mobsters shoot Max (health %.0f)" % player.health)
+
+	# --- Kills, drops and pickups ------------------------------------------------
+	var reserve := player.pistol.reserve_ammo
+	shooter.take_hit(1000.0, shooter.global_position + Vector3(0, 1.2, 0), Vector3.FORWARD)
+	_check(shooter.state == Enemy.State.DEAD, "a mobster dies")
+	_check(game.kills == 1, "kills are counted")
+	await _frames(2)
+	var ammo: Pickup = null
+	for pickup: Pickup in get_tree().get_nodes_in_group(&"pickups"):
+		if pickup.kind == Pickup.Kind.AMMO:
+			ammo = pickup
+	_check(ammo != null, "dead mobsters drop ammo")
+	if ammo:
+		player.global_position = ammo.global_position
+		await _frames(10)
+		_check(player.pistol.reserve_ammo > reserve, "walking over ammo picks it up")
+
+	# Clear the wave: kill every mobster, including the ones still to come.
+	waited = 0
+	while game.remaining() > 0 and waited < 1200:
+		for enemy: Enemy in get_tree().get_nodes_in_group(&"enemies"):
+			enemy.take_hit(1000.0, enemy.global_position + Vector3(0, 1.2, 0), Vector3.FORWARD)
+		await _frames(1)
+		waited += 1
+	_check(game.remaining() == 0 and game.break_left > 14.0, "the next wave comes 15 s after a wave is cleared")
+
+	# Heal between waves, with nobody shooting: wait for stray bullets, and
+	# clear the drops so none is picked up meanwhile.
+	for pickup in get_tree().get_nodes_in_group(&"pickups"):
+		pickup.queue_free()
+	await get_tree().create_timer(1.0).timeout
+	var hurt_health := player.health
+	var bottles := player.painkillers
+	_check(player.use_painkiller(), "Max takes a painkiller")
+	await get_tree().create_timer(1.4).timeout
+	_check(player.health > hurt_health and player.painkillers == bottles - 1,
+			"painkillers heal (%.0f -> %.0f)" % [hurt_health, player.health])
+
+	# --- Cover -----------------------------------------------------------------------
+	# The concrete barrier at (-2.5, 12) is waist high; stand east of it, facing west.
+	player.global_position = Vector3(-1.4, 0.05, 12.0)
+	player.set(&"_yaw", PI * 0.5)
+	await _frames(10)
+	_check(player.try_take_cover(), "Max takes cover behind a barrier")
+	await _frames(30)
+	_check(player.state == Player.State.COVER and player.is_crouching(), "Max ducks behind low cover")
+	player.call(&"_fire")
+	await _frames(2)
+	_check(not player.is_crouching(), "shooting from cover pops Max up")
+	await _frames(30)
+	_check(player.pistol.ammo_in_magazine < player.pistol.magazine_size, "the shot from cover is fired")
+
+	# --- Death -----------------------------------------------------------------------
+	var game_over := [false]
+	game.game_over.connect(func(_wave: int, _kills: int, _record: bool) -> void: game_over[0] = true)
+	player.take_hit(1000.0, player.global_position + Vector3(0, 1.2, 0), Vector3.FORWARD)
+	_check(player.state == Player.State.DEAD, "Max dies")
+	await get_tree().create_timer(3.0).timeout
+	_check(game_over[0], "the game over screen comes up")
+	game.queue_free()
+	await _frames(2)
+
+
+func _test_title_screen() -> void:
+	var title: TitleScreen = TITLE_SCENE.instantiate()
+	add_child(title)
+	await _frames(5)
+	var before := Game.difficulty
+	title.call(&"_cycle_difficulty", 1)
+	_check(Game.difficulty != before, "the title screen changes the difficulty")
+	title.call(&"_cycle_difficulty", -1)
+	_check(Game.difficulty == before, "and changes it back")
+	title.queue_free()
+	await _frames(2)
 
 
 ## Touch events arrive in window coordinates; [param position] is given in

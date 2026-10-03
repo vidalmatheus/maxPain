@@ -76,6 +76,17 @@ func end_shootdodge() -> void:
 	_refresh()
 
 
+## Back to normal speed with a full hourglass, e.g. when a new game starts.
+func reset() -> void:
+	_toggled = false
+	_shootdodge = false
+	if is_active:
+		is_active = false
+		deactivated.emit()
+	Engine.time_scale = 1.0
+	_set_adrenaline(max_adrenaline)
+
+
 func add_adrenaline(amount: float) -> void:
 	_set_adrenaline(adrenaline + amount)
 

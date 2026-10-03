@@ -130,6 +130,15 @@ func try_fire(target: Vector3, exclude: Array[RID]) -> bool:
 	return true
 
 
+## Adds rounds to the reserve (e.g. picked up from a dead enemy), and
+## reloads straight away if the gun was empty.
+func add_ammo(rounds: int) -> void:
+	reserve_ammo += rounds
+	ammo_changed.emit(ammo_in_magazine, reserve_ammo)
+	if ammo_in_magazine == 0:
+		reload()
+
+
 func reload() -> void:
 	if is_reloading() or ammo_in_magazine == magazine_size or reserve_ammo <= 0:
 		return

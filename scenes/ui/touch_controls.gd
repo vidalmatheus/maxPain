@@ -19,6 +19,12 @@ const BUTTONS := [
 	{"action": &"jump", "label": "JUMP", "offset": Vector2(-140, -370), "radius": 46.0},
 	{"action": &"reload", "label": "RELOAD", "offset": Vector2(-450, -90), "radius": 44.0},
 	{"action": &"next_weapon", "label": "GUN", "offset": Vector2(-70, -500), "radius": 42.0},
+	{"action": &"take_cover", "label": "COVER", "offset": Vector2(-290, -460), "radius": 44.0},
+	{"action": &"use_painkiller", "label": "PILL", "offset": Vector2(-460, -250), "radius": 40.0},
+]
+## Buttons positioned from the top-right corner.
+const TOP_BUTTONS := [
+	{"action": &"pause", "label": "II", "offset": Vector2(-60, 60), "radius": 34.0},
 ]
 const JOYSTICK_RADIUS := 100.0
 ## Where the joystick hint is drawn while not in use (from the bottom-left).
@@ -39,7 +45,7 @@ var _look_touch := -1
 var _look_position := Vector2.ZERO
 ## Touch index -> action held by that finger.
 var _button_touches := {}
-var _requested_fullscreen := false
+static var _requested_fullscreen := false
 
 
 func _ready() -> void:
@@ -81,7 +87,7 @@ func _input(event: InputEvent) -> void:
 
 
 func _on_touch_pressed(index: int, position: Vector2) -> void:
-	_request_fullscreen_landscape()
+	request_fullscreen_landscape()
 	var button := _button_at(position)
 	if not button.is_empty():
 		_button_touches[index] = button.action
@@ -123,13 +129,15 @@ func _set_joystick(vector: Vector2) -> void:
 
 
 func _button_at(position: Vector2) -> Dictionary:
-	for button: Dictionary in BUTTONS:
+	for button: Dictionary in BUTTONS + TOP_BUTTONS:
 		if position.distance_to(_button_center(button)) <= button.radius * 1.15:
 			return button
 	return {}
 
 
 func _button_center(button: Dictionary) -> Vector2:
+	if button in TOP_BUTTONS:
+		return Vector2(size.x, 0) + (button.offset as Vector2)
 	return size + (button.offset as Vector2)
 
 
@@ -151,7 +159,7 @@ func _release_all() -> void:
 ## In the browser, go fullscreen and lock to landscape on the first touch
 ## (browsers only allow this during a user gesture; iPhones don't support the
 ## orientation lock, so the HUD shows a "rotate your device" hint instead).
-func _request_fullscreen_landscape() -> void:
+static func request_fullscreen_landscape() -> void:
 	if _requested_fullscreen or not OS.has_feature("web"):
 		return
 	_requested_fullscreen = true
@@ -183,7 +191,7 @@ func _draw() -> void:
 	draw_circle(base + _joystick_vector * JOYSTICK_RADIUS, JOYSTICK_RADIUS * 0.4, COLOR_PRESSED if _joystick_touch >= 0 else COLOR)
 
 	var held := _button_touches.values()
-	for button: Dictionary in BUTTONS:
+	for button: Dictionary in BUTTONS + TOP_BUTTONS:
 		var center := _button_center(button)
 		var radius: float = button.radius
 		draw_circle(center, radius, COLOR_PRESSED if button.action in held else COLOR)

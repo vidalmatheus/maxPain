@@ -12,7 +12,7 @@ config_version=5
 
 config/name="Max Pain"
 config/description="A Max Payne inspired third-person shooter prototype."
-run/main_scene="res://scenes/main.tscn"
+run/main_scene="res://scenes/title/title_screen.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://icon.svg"
 
@@ -21,6 +21,8 @@ config/icon="res://icon.svg"
 GameInput="*res://autoload/game_input.gd"
 BulletTime="*res://autoload/bullet_time.gd"
 SoundFx="*res://autoload/sound_fx.gd"
+Game="*res://autoload/game.gd"
+Music="*res://autoload/music.gd"
 
 [display]
 

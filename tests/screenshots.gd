@@ -8,6 +8,8 @@ extends Node
 ##   godot --path . res://tests/screenshots.tscn -- --output=<directory>
 
 const MAIN_SCENE := preload("res://scenes/main.tscn")
+const TITLE_SCENE := preload("res://scenes/title/title_screen.tscn")
+const SURVIVAL_SCENE := preload("res://scenes/game/survival.tscn")
 const DEFAULT_OUTPUT := "user://screenshots"
 
 var _output_dir := DEFAULT_OUTPUT
@@ -76,6 +78,36 @@ func _ready() -> void:
 		await _game_seconds(0.12)
 	await _shot("dual_berettas", "Dual Berettas, one in each hand, firing alternately.")
 	BulletTime.toggle()
+
+	# Title screen, then a survival game on the street.
+	main.queue_free()
+	var title: Node = TITLE_SCENE.instantiate()
+	add_child(title)
+	await _game_seconds(1.5)
+	await _shot("title", "Title screen: survival mode, difficulty levels, training range.")
+	title.queue_free()
+	await get_tree().process_frame
+	var game: Survival = SURVIVAL_SCENE.instantiate()
+	add_child(game)
+	game.break_left = 0.1
+	var player := game.player
+	player.set(&"_yaw", PI)  # Down the main street.
+	await _game_seconds(4.0)
+	for enemy: Enemy in get_tree().get_nodes_in_group(&"enemies"):
+		enemy.global_position = player.global_position + Vector3(randf_range(-4, 4), 0, randf_range(9, 14))
+	await _game_seconds(2.5)
+	await _shot("survival", "Survival: mobsters come in waves and shoot back.")
+	# Cover behind the concrete barrier west of the street.
+	player.global_position = Vector3(-1.4, 0.05, 12.0)
+	player.set(&"_yaw", PI * 0.5)
+	await _physics_frames(10)
+	player.try_take_cover()
+	player.set(&"_yaw", PI * 0.75)
+	await _game_seconds(1.0)
+	await _shot("cover", "Taking cover behind a concrete barrier.")
+	game.queue_free()
+	Music.stop()
+	await _game_seconds(Music.FADE_TIME + 0.3)
 
 	_write_index()
 	SoundFx.stop_all()

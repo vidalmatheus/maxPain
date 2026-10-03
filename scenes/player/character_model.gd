@@ -13,11 +13,11 @@ extends Node3D
 ## read the guns' places with [method get_gun_transform].
 signal hands_posed
 
-enum Locomotion { IDLE, RUN, RUN_BACK, AIR, CROUCH }
+enum Locomotion { IDLE, RUN, RUN_BACK, AIR, CROUCH, DEAD }
 
 const ANIMATIONS := preload("res://assets/characters/max_payne/animations.res")
 const SKELETON_PATH := "Armature/Skeleton3D"
-const LOCOMOTION_INPUTS := ["idle", "run", "run_back", "air", "crouch"]
+const LOCOMOTION_INPUTS := ["idle", "run", "run_back", "air", "crouch", "dead"]
 ## Ground speed (m/s) at which the jog animation plays at normal speed.
 const JOG_SPEED := 4.5
 ## Aim pitch (radians) that maps to the full "aim up/down" poses.
@@ -37,6 +37,7 @@ var _twist: AimTwistModifier
 var _arms: ArmIKModifier
 var _head: HeadLookModifier
 var _locomotion := Locomotion.IDLE
+var _dead := false
 var _reload_timer: SceneTreeTimer
 ## Gun transforms per hand, in skeleton space, from the last final pose.
 var _gun_poses := {"r": Transform3D.IDENTITY, "l": Transform3D.IDENTITY}
@@ -110,6 +111,8 @@ func set_dive_pose(amount: float, along: float) -> void:
 
 
 func set_locomotion(locomotion: Locomotion, ground_speed: float) -> void:
+	if _dead:
+		return
 	if locomotion != _locomotion:
 		_locomotion = locomotion
 		_tree.set(&"parameters/locomotion/transition_request", LOCOMOTION_INPUTS[locomotion])
@@ -128,6 +131,44 @@ func aim_at(target: Vector3) -> void:
 	_head.target = target
 	var pitch := atan2(local.y - 1.4, Vector2(local.x, local.z).length())
 	_tree.set(&"parameters/aim/blend_position", clampf(pitch / MAX_AIM_PITCH, -1.0, 1.0))
+
+
+## Flinches as if hit in the chest.
+func play_hit() -> void:
+	if not _dead:
+		_tree.set(&"parameters/hit/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+
+
+## Falls down dead: the whole body plays the death animation and the aiming
+## modifiers let go.
+func play_death() -> void:
+	if _dead:
+		return
+	_dead = true
+	_locomotion = Locomotion.DEAD
+	_tree.set(&"parameters/locomotion/transition_request", "dead")
+	_tree.set(&"parameters/locomotion_speed/scale", 1.0)
+	_tree.set(&"parameters/upper/blend_amount", 0.0)
+	for request in [&"fire", &"reload", &"hit"]:
+		_tree.set(StringName("parameters/%s/request" % request), AnimationNodeOneShot.ONE_SHOT_REQUEST_ABORT)
+	_twist.active = false
+	_arms.active = false
+	_head.active = false
+	_dive.active = false
+
+
+## Recolors the clothes: a multiplier for the jacket and one for the pants.
+## Each character gets its own materials.
+func set_clothes_tint(jacket: Color, pants: Color) -> void:
+	var body := rig.find_child("Body", true, false) as MeshInstance3D
+	for surface in body.mesh.get_surface_count():
+		var part: String = (body.mesh as ArrayMesh).surface_get_name(surface)
+		var tint: Color = jacket if part.begins_with("jacket") else pants if part.begins_with("pants") else Color.WHITE
+		if tint == Color.WHITE:
+			continue
+		var material := body.get_active_material(surface).duplicate() as BaseMaterial3D
+		material.albedo_color *= tint
+		body.set_surface_override_material(surface, material)
 
 
 func play_fire() -> void:
@@ -159,7 +200,7 @@ func _build_tree() -> AnimationNodeBlendTree:
 	for i in LOCOMOTION_INPUTS.size():
 		locomotion.set_input_name(i, LOCOMOTION_INPUTS[i])
 	tree.add_node(&"locomotion", locomotion)
-	var clips := ["Pistol_Idle_Loop", "Jog_Fwd_Loop", "Jog_Fwd_Loop", "Jump_Loop", "Crouch_Idle_Loop"]
+	var clips := ["Pistol_Idle_Loop", "Jog_Fwd_Loop", "Jog_Fwd_Loop", "Jump_Loop", "Crouch_Idle_Loop", "Death01"]
 	for i in clips.size():
 		var clip := _clip(clips[i])
 		if LOCOMOTION_INPUTS[i] == "run_back":
@@ -205,7 +246,17 @@ func _build_tree() -> AnimationNodeBlendTree:
 	tree.connect_node(&"fire", 0, &"reload")
 	tree.connect_node(&"fire", 1, &"fire_clip")
 
-	tree.connect_node(&"output", 0, &"fire")
+	# Flinch when shot.
+	var hit := AnimationNodeOneShot.new()
+	hit.fadein_time = 0.05
+	hit.fadeout_time = 0.2
+	_filter_upper_body(hit)
+	tree.add_node(&"hit_clip", _clip("Hit_Chest"))
+	tree.add_node(&"hit", hit)
+	tree.connect_node(&"hit", 0, &"fire")
+	tree.connect_node(&"hit", 1, &"hit_clip")
+
+	tree.connect_node(&"output", 0, &"hit")
 	return tree
 
 

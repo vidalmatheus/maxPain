@@ -1,5 +1,7 @@
 [gd_scene format=3]
 
+[ext_resource type="Script" path="res://scenes/ui/pause_menu.gd" id="90_pause"]
+
 [ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="1_player"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="2_hud"]
 [ext_resource type="PackedScene" path="res://scenes/targets/target_dummy.tscn" id="3_target"]
@@ -221,3 +223,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 10)
 
 [node name="HUD" parent="." node_paths=PackedStringArray("player") instance=ExtResource("2_hud")]
 player = NodePath("../Player")
+
+[node name="PauseMenu" type="CanvasLayer" parent="."]
+script = ExtResource("90_pause")

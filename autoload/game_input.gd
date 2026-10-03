@@ -41,6 +41,9 @@ const KEYS := {
 	&"toggle_fullscreen": [KEY_F11],
 	&"weapon_beretta": [KEY_1],
 	&"weapon_dual_berettas": [KEY_2],
+	&"take_cover": [KEY_C, KEY_CTRL],
+	&"use_painkiller": [KEY_H, KEY_E],
+	&"pause": [KEY_P, KEY_ESCAPE],
 }
 
 const MOUSE_BUTTONS := {
@@ -56,7 +59,10 @@ const JOY_BUTTONS := {
 	&"reload": [JOY_BUTTON_X],
 	&"bullet_time": [JOY_BUTTON_LEFT_SHOULDER, JOY_BUTTON_RIGHT_STICK],
 	&"shootdodge": [JOY_BUTTON_RIGHT_SHOULDER],
-	&"toggle_help": [JOY_BUTTON_START, JOY_BUTTON_BACK],
+	&"toggle_help": [JOY_BUTTON_BACK],
+	&"pause": [JOY_BUTTON_START],
+	&"take_cover": [JOY_BUTTON_B],
+	&"use_painkiller": [JOY_BUTTON_DPAD_UP],
 	&"next_weapon": [JOY_BUTTON_Y, JOY_BUTTON_DPAD_LEFT, JOY_BUTTON_DPAD_RIGHT],
 }
 
@@ -85,7 +91,10 @@ const PROMPTS := {
 	&"reload": ["R", "X", "Square", "RELOAD"],
 	&"bullet_time": ["Shift / Q", "LB / R3", "L1 / R3", "SLOW"],
 	&"shootdodge": ["Right click", "RB / LT", "R1 / L2", "DODGE"],
-	&"toggle_help": ["F1", "Menu", "Options", "?"],
+	&"toggle_help": ["F1", "View", "Create", "?"],
+	&"pause": ["Esc / P", "Menu", "Options", "II"],
+	&"take_cover": ["C", "B", "Circle", "COVER"],
+	&"use_painkiller": ["H", "D-pad up", "D-pad up", "PILL"],
 	&"next_weapon": ["1 / 2 / Wheel", "Y", "Triangle", "GUN"],
 }
 

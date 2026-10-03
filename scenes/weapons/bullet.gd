@@ -6,8 +6,10 @@ extends Node3D
 ## physics frame. This keeps it visible in slow motion while never tunnelling
 ## through thin geometry, no matter how fast it moves.
 
-## Physics layers bullets collide with (world, enemies, props).
-const COLLISION_MASK := 0b1101
+## Physics layers the player's bullets collide with (world, enemies, props).
+const PLAYER_BULLET_MASK := 0b1101
+## Physics layers enemy bullets collide with (world, player, props).
+const ENEMY_BULLET_MASK := 0b1011
 const SPARK_COLOR := Color(1.0, 0.8, 0.45)
 
 @export var max_lifetime := 4.0
@@ -17,6 +19,7 @@ const SPARK_COLOR := Color(1.0, 0.8, 0.45)
 
 var velocity := Vector3.ZERO
 var damage := 0.0
+var collision_mask := PLAYER_BULLET_MASK
 
 var _exclude: Array[RID] = []
 var _age := 0.0
@@ -25,8 +28,10 @@ var _distance := 0.0
 @onready var trail: Node3D = $Trail
 
 
-func launch(origin: Vector3, initial_velocity: Vector3, bullet_damage: float, exclude: Array[RID]) -> void:
+func launch(origin: Vector3, initial_velocity: Vector3, bullet_damage: float, exclude: Array[RID],
+		mask := PLAYER_BULLET_MASK) -> void:
 	global_position = origin
+	collision_mask = mask
 	velocity = initial_velocity
 	damage = bullet_damage
 	_exclude = exclude
@@ -38,7 +43,7 @@ func launch(origin: Vector3, initial_velocity: Vector3, bullet_damage: float, ex
 func _physics_process(delta: float) -> void:
 	var from := global_position
 	var step := velocity * delta
-	var query := PhysicsRayQueryParameters3D.create(from, from + step, COLLISION_MASK, _exclude)
+	var query := PhysicsRayQueryParameters3D.create(from, from + step, collision_mask, _exclude)
 	var hit := get_world_3d().direct_space_state.intersect_ray(query)
 	if not hit.is_empty():
 		_on_hit(hit)
