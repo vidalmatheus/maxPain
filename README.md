@@ -81,36 +81,53 @@ Notes:
   the folder over HTTP (for example `python3 -m http.server -d build/web`)
   instead of opening the file directly.
 
-## Continuous builds and GitHub Pages
+## Play online, PR previews and releases
 
-The workflow in `.github/workflows/build.yml` runs on every push and pull request:
+The Web build is published to GitHub Pages and the desktop builds to GitHub
+Releases, all by GitHub Actions:
 
-1. Installs Godot (cached between runs), runs the smoke test and exports all
-   four platforms. Desktop builds are available as a downloadable artifact on
-   each workflow run.
-2. On pushes to `main`, publishes the Web build to **GitHub Pages**, so the game
-   is playable at `https://<user>.github.io/<repo>/`.
-3. On tags like `v0.1.0`, creates a **GitHub Release** with the Windows, Linux
-   and macOS builds attached:
+| Workflow | When | What |
+|---|---|---|
+| `pages.yml` | push to `main` | Smoke test, then publishes the game at `https://vidalmatheus.github.io/maxPain/` |
+| `pr-preview.yml` | every pull request | Playable preview at `https://vidalmatheus.github.io/maxPain/pr-preview/pr-<number>/` (the link is posted on the PR), with screenshots of the core mechanics in `.../shots/`. Removed when the PR is closed. |
+| `release.yml` | tags like `v0.1.0` | GitHub Release with the Windows, Linux and macOS builds attached |
 
-   ```sh
-   git tag v0.1.0 && git push origin v0.1.0
-   ```
+To publish a release:
 
-One-time setup: in the repository's **Settings > Pages**, set **Source** to
-**GitHub Actions**. GitHub Pages requires a public repository on the free plan
-(or a paid plan for private repositories).
+```sh
+git tag v0.1.0 && git push origin v0.1.0
+```
+
+One-time setup: GitHub Pages must be set to **Settings > Pages > Source:
+Deploy from a branch > `gh-pages` / (root)**, so the main site and the PR
+previews (in `gh-pages/pr-preview/`) live side by side. The `gh-pages` branch
+is created by the first workflow run. On the free plan the repository must be
+public.
+
+To build locally (export templates required), use `tools/export.sh`:
+
+```sh
+tools/export.sh web          # or: windows linux macos, or: all
+python3 -m http.server -d build/web
+```
 
 ## Tests
 
 A headless smoke test drives the main scene and checks walking, shooting,
-kills, bullet time, shootdodge and reloading:
+kills, bullet time, shootdodge and reloading. It exits with code 0 when every
+check passes:
 
 ```sh
 godot --headless --path . res://tests/smoke_test.tscn
 ```
 
-It exits with code 0 when every check passes.
+A second scene plays a scripted sequence and saves screenshots plus an
+`index.html` gallery (it needs a renderer, so no `--headless`; CI runs it under
+`xvfb-run`):
+
+```sh
+godot --path . res://tests/screenshots.tscn -- --output=/tmp/shots
+```
 
 ## Project layout
 
@@ -126,7 +143,9 @@ scenes/
   props/               Physics crate
   fx/                  Impact particles
   ui/                  HUD, crosshair and bullet-time screen shader
-tests/                 Headless smoke test
+tests/                 Headless smoke test and screenshot sequence
+tools/export.sh        Exports builds into build/<platform>/
+.github/               CI: Pages deploy, PR previews, releases
 ```
 
 Physics layers: `1 world`, `2 player`, `3 enemies`, `4 props`.

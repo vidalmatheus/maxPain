@@ -1,0 +1,45 @@
+# Builds the Web version and publishes it to GitHub Pages.
+#
+# The main site lives at the root of the gh-pages branch; PR previews live in
+# gh-pages/pr-preview/pr-<N>/ (see pr-preview.yml) and are preserved here
+# (clean-exclude). One-time setup: Settings -> Pages -> Source: "Deploy from a
+# branch" -> gh-pages / (root).
+name: Deploy web build to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['**.md', 'docs/**', 'LICENSE']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ./.github/actions/setup-godot
+
+      - name: Import project
+        run: godot --headless --path . --import > /dev/null
+
+      - name: Smoke test (headless)
+        timeout-minutes: 5
+        run: godot --headless --path . res://tests/smoke_test.tscn
+
+      - name: Export the web build
+        run: tools/export.sh web
+
+      - uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: build/web
+          branch: gh-pages
+          clean-exclude: pr-preview/
+          force: false

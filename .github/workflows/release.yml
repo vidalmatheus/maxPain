@@ -1,0 +1,42 @@
+# Exports the desktop builds and attaches them to a GitHub Release when a
+# version tag is pushed:
+#   git tag v0.1.0 && git push origin v0.1.0
+name: Release desktop builds
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ./.github/actions/setup-godot
+
+      - name: Import project
+        run: godot --headless --path . --import > /dev/null
+
+      - name: Smoke test (headless)
+        timeout-minutes: 5
+        run: godot --headless --path . res://tests/smoke_test.tscn
+
+      - name: Export desktop builds
+        run: tools/export.sh windows linux macos
+
+      - name: Package
+        run: |
+          mkdir -p dist
+          (cd build/windows && zip -q ../../dist/MaxPain-windows.zip MaxPain.exe)
+          (cd build/linux && zip -q ../../dist/MaxPain-linux.zip MaxPain.x86_64)
+          cp build/macos/MaxPain.zip dist/MaxPain-macos.zip
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          files: dist/*
+          generate_release_notes: true

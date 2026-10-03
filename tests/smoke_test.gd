@@ -16,7 +16,8 @@ func _ready() -> void:
 
 	var bullet_time := BulletTime
 	var player: Player = main.get_node("Player")
-	var target: TargetDummy = main.get_node("Targets/Target1")
+	# Target3 has a clear line of fire from the spawn point.
+	var target: TargetDummy = main.get_node("Targets/Target3")
 
 	_check(player.is_on_floor(), "player lands on the floor")
 	_check(player.state == Player.State.NORMAL, "player starts in NORMAL state")
@@ -29,6 +30,7 @@ func _ready() -> void:
 	_check(player.global_position.z < start.z - 1.0, "player walks forward (-Z)")
 
 	# --- Shooting: bullets travel and damage targets ------------------------
+	player.pistol.spread_degrees = 0.0  # Deterministic shots.
 	var chest := target.global_position + Vector3(0.0, 1.0, 0.0)
 	var ammo_before := player.pistol.ammo_in_magazine
 	_check(player.pistol.try_fire(chest, [player.get_rid()]), "pistol fires")
