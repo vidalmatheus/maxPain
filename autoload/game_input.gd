@@ -24,6 +24,9 @@ const DEADZONE := 0.25
 const LOOK_DEADZONE := 0.1
 ## How far an analog stick must move before it counts as "using the gamepad".
 const ANALOG_ACTIVITY_THRESHOLD := 0.4
+## Mobile browsers send emulated mouse events right after touches; mouse input
+## this soon after a touch is ignored instead of switching away from touch.
+const TOUCH_MOUSE_GRACE_MSEC := 1000
 
 const KEYS := {
 	&"move_forward": [KEY_W, KEY_UP],
@@ -91,6 +94,8 @@ var layout := Layout.KEYBOARD_MOUSE
 ## Device id of the last gamepad used, or -1 when none has been used yet.
 var active_joypad := -1
 
+var _last_touch_msec := -TOUCH_MOUSE_GRACE_MSEC
+
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -110,14 +115,18 @@ func _ready() -> void:
 func _input(event: InputEvent) -> void:
 	# Track the device the player is actually using to show matching prompts.
 	if event is InputEventScreenTouch or event is InputEventScreenDrag:
+		_last_touch_msec = Time.get_ticks_msec()
 		_set_layout(Layout.TOUCH)
 	elif event is InputEventJoypadButton or (event is InputEventJoypadMotion
 			and absf((event as InputEventJoypadMotion).axis_value) > ANALOG_ACTIVITY_THRESHOLD):
 		active_joypad = event.device
 		_set_layout(detect_layout(Input.get_joy_name(event.device), Input.get_joy_info(event.device)))
-	elif event is InputEventKey or event is InputEventMouseButton or (event is InputEventMouseMotion
-			and (event as InputEventMouseMotion).relative.length() > 2.0):
+	elif event is InputEventKey:
 		_set_layout(Layout.KEYBOARD_MOUSE)
+	elif event is InputEventMouseButton or (event is InputEventMouseMotion
+			and (event as InputEventMouseMotion).relative.length() > 2.0):
+		if Time.get_ticks_msec() - _last_touch_msec > TOUCH_MOUSE_GRACE_MSEC:
+			_set_layout(Layout.KEYBOARD_MOUSE)
 
 
 func _unhandled_input(event: InputEvent) -> void:

@@ -110,8 +110,9 @@ func _ready() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	var captured := Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
 
-	# Clicking the window grabs the mouse; that click must not fire.
-	if event is InputEventMouseButton and event.pressed and not captured:
+	# Clicking the window grabs the mouse; that click must not fire. Not on
+	# touch screens, where there is no mouse to capture.
+	if event is InputEventMouseButton and event.pressed and not captured and not GameInput.is_using_touch():
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 		_capture_click_frame = Engine.get_process_frames()
 		get_viewport().set_input_as_handled()

@@ -177,6 +177,15 @@ func _ready() -> void:
 	_send_touch(0, stick + Vector2(0, -80), false)
 	await _frames(10)
 
+	# Mobile browsers send emulated mouse events after touches: they must not
+	# switch away from the touch controls. (Emulated clicks are blocked in the
+	# web page itself, see html/head_include in export_presets.cfg.)
+	var emulated := InputEventMouseMotion.new()
+	emulated.relative = Vector2(40, 20)
+	Input.parse_input_event(emulated)
+	await _frames(2)
+	_check(GameInput.is_using_touch() and touch.visible, "emulated mouse events after a touch keep the touch controls")
+
 	var fire_button := touch.size + Vector2(-150, -190)
 	var ammo_before_tap := player.pistol.ammo_in_magazine
 	_send_touch(1, fire_button, true)
