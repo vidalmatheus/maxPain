@@ -21,6 +21,8 @@ var _toast_time_left := 0.0
 @onready var capture_hint: Label = %CaptureHint
 @onready var toast_label: Label = %ToastLabel
 @onready var rotate_overlay: ColorRect = %RotateOverlay
+@onready var painkiller_icon: Control = %PainkillerIcon
+@onready var painkiller_label: Label = %PainkillerLabel
 
 
 func _ready() -> void:
@@ -94,6 +96,14 @@ func _on_layout_changed(_layout: GameInput.Layout) -> void:
 
 func _on_controller_connection_changed(controller_name: String, connected: bool) -> void:
 	_show_toast("%s %s" % [controller_name, "connected" if connected else "disconnected"])
+
+
+## Shows the painkiller count; like in the original game, the bottle is only
+## shown while the player carries some.
+func set_painkillers(count: int) -> void:
+	painkiller_icon.visible = count > 0
+	painkiller_label.visible = count > 0
+	painkiller_label.text = str(count)
 
 
 func _on_adrenaline_changed(value: float, max_value: float) -> void:

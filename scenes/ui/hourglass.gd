@@ -1,20 +1,21 @@
 class_name Hourglass
 extends Control
-## Max Payne 1 style bullet-time meter: a tall hourglass with rounded bulbs
-## and a dark frame, filled from the bottom up with the adrenaline left.
+## Max Payne 1 bullet-time meter, traced from the original game's HUD: a tall,
+## semi-transparent hourglass with straight-sided bulbs and a curved neck,
+## filled from the bottom up with the adrenaline left.
 
-const FRAME := Color(0.04, 0.04, 0.05, 0.85)
-const EMPTY := Color(0, 0, 0, 0.25)
-const SAND := Color(0.82, 0.86, 0.95, 0.9)
-const SAND_FLOWING := Color(0.95, 0.85, 0.55, 0.95)
+const FRAME := Color(0.08, 0.08, 0.08, 0.6)
+const EMPTY := Color(0, 0, 0, 0.18)
+const SAND := Color(0.68, 0.75, 0.86, 0.62)
+const SAND_FLOWING := Color(0.78, 0.84, 0.94, 0.72)
 
 ## Right half of the outline in normalized coordinates, top to bottom;
 ## mirrored for the left half.
 const RIGHT_HALF: Array[Vector2] = [
-	Vector2(0.5, 0.0), Vector2(0.8, 0.0), Vector2(0.95, 0.035), Vector2(1.0, 0.1),
-	Vector2(1.0, 0.3), Vector2(0.92, 0.4), Vector2(0.7, 0.465), Vector2(0.62, 0.5),
-	Vector2(0.7, 0.535), Vector2(0.92, 0.6), Vector2(1.0, 0.7), Vector2(1.0, 0.9),
-	Vector2(0.95, 0.965), Vector2(0.8, 1.0), Vector2(0.5, 1.0),
+	Vector2(0.5, 0.0), Vector2(0.86, 0.0), Vector2(1.0, 0.035), Vector2(1.0, 0.42),
+	Vector2(0.97, 0.465), Vector2(0.86, 0.5), Vector2(0.76, 0.52), Vector2(0.86, 0.545),
+	Vector2(0.97, 0.58), Vector2(1.0, 0.625), Vector2(1.0, 0.965), Vector2(0.86, 1.0),
+	Vector2(0.5, 1.0),
 ]
 
 ## Remaining adrenaline, 0..1.
@@ -40,7 +41,7 @@ func _draw() -> void:
 		draw_colored_polygon(piece, SAND_FLOWING if flowing else SAND)
 	var closed := shape.duplicate()
 	closed.append(shape[0])
-	draw_polyline(closed, FRAME, 2.5, true)
+	draw_polyline(closed, FRAME, 1.5, true)
 
 
 func _outline() -> PackedVector2Array:

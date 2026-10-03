@@ -1,47 +1,25 @@
 class_name HealthFigure
 extends Control
-## Max Payne style health indicator: Max in his coat, seen from behind (as
-## the camera sees him), drawn as a grey silhouette with a pale blue rim and
-## the coat's seams. Damage fills it with dark red from the feet up.
+## Max Payne 1 health indicator: a smooth, semi-transparent silhouette of Max
+## seen from behind, traced from the original game's HUD. Damage fills it
+## with red from the feet up.
 
-const BODY := Color(0.53, 0.53, 0.49, 0.85)
-const HURT := Color(0.56, 0.15, 0.09, 0.92)
-const RIM := Color(0.7, 0.76, 0.86, 0.9)
-const SHADOW := Color(0, 0, 0, 0.55)
-const SEAMS := Color(0.08, 0.08, 0.08, 0.7)
+const BODY := Color(0.74, 0.74, 0.72, 0.62)
+const HURT := Color(0.62, 0.16, 0.1, 0.75)
+const OUTLINE := Color(0.08, 0.08, 0.06, 0.5)
 
-## Right half of the outline in normalized coordinates (0..1), traced from
-## the top of the head, down the arm and coat, to the right foot and back up
-## the inner leg to the crotch. Mirrored for the left half.
-const RIGHT_HALF: Array[Vector2] = [
-	Vector2(0.5, 0.0), Vector2(0.62, 0.01), Vector2(0.66, 0.05), Vector2(0.65, 0.108),
-	Vector2(0.61, 0.125), Vector2(0.64, 0.14), Vector2(0.84, 0.18), Vector2(0.92, 0.215),
-	Vector2(0.97, 0.33), Vector2(0.99, 0.52), Vector2(0.95, 0.56), Vector2(0.86, 0.565),
-	Vector2(0.82, 0.6), Vector2(0.77, 0.61), Vector2(0.75, 0.92), Vector2(0.84, 0.945),
-	Vector2(0.82, 0.995), Vector2(0.58, 0.995), Vector2(0.55, 0.92), Vector2(0.52, 0.63),
-	Vector2(0.5, 0.63),
-]
-
-## Seams and folds of the coat, as line segments (pairs of points).
-const SEAM_LINES: Array[Vector2] = [
-	# Collar.
-	Vector2(0.37, 0.14), Vector2(0.63, 0.14),
-	# Shoulder seams into the back panel.
-	Vector2(0.17, 0.22), Vector2(0.31, 0.25), Vector2(0.83, 0.22), Vector2(0.69, 0.25),
-	Vector2(0.31, 0.25), Vector2(0.69, 0.25),
-	# Back panel.
-	Vector2(0.31, 0.25), Vector2(0.3, 0.5), Vector2(0.69, 0.25), Vector2(0.7, 0.5),
-	# Arms against the body.
-	Vector2(0.16, 0.24), Vector2(0.14, 0.55), Vector2(0.84, 0.24), Vector2(0.86, 0.55),
-	# Elbows.
-	Vector2(0.03, 0.37), Vector2(0.14, 0.37), Vector2(0.86, 0.37), Vector2(0.97, 0.37),
-	# Half belt at the back of the coat.
-	Vector2(0.32, 0.5), Vector2(0.68, 0.5), Vector2(0.32, 0.53), Vector2(0.68, 0.53),
-	Vector2(0.32, 0.5), Vector2(0.32, 0.53), Vector2(0.68, 0.5), Vector2(0.68, 0.53),
-	# Coat hem.
-	Vector2(0.2, 0.585), Vector2(0.8, 0.585),
-	# Shoes.
-	Vector2(0.23, 0.93), Vector2(0.43, 0.93), Vector2(0.57, 0.93), Vector2(0.77, 0.93),
+## Outline in normalized coordinates (0..1), clockwise from the top of the head.
+const OUTLINE_POINTS: Array[Vector2] = [
+	Vector2(0.378, 0.0), Vector2(0.631, 0.012), Vector2(0.654, 0.07), Vector2(0.645, 0.123),
+	Vector2(0.608, 0.149), Vector2(0.7, 0.167), Vector2(0.862, 0.193), Vector2(0.931, 0.237),
+	Vector2(0.968, 0.325), Vector2(0.995, 0.553), Vector2(0.954, 0.584), Vector2(0.885, 0.579),
+	Vector2(0.848, 0.602), Vector2(0.82, 0.614), Vector2(0.802, 0.956), Vector2(0.848, 0.977),
+	Vector2(0.839, 1.0), Vector2(0.627, 1.0), Vector2(0.59, 0.956), Vector2(0.553, 0.64),
+	Vector2(0.498, 0.623), Vector2(0.452, 0.64), Vector2(0.433, 0.956), Vector2(0.424, 1.0),
+	Vector2(0.24, 1.0), Vector2(0.221, 0.977), Vector2(0.249, 0.956), Vector2(0.23, 0.614),
+	Vector2(0.147, 0.602), Vector2(0.065, 0.584), Vector2(0.0, 0.553), Vector2(0.018, 0.325),
+	Vector2(0.065, 0.237), Vector2(0.147, 0.198), Vector2(0.309, 0.167), Vector2(0.401, 0.149),
+	Vector2(0.378, 0.123), Vector2(0.359, 0.07),
 ]
 
 ## 1.0 = full health, 0.0 = dead.
@@ -52,27 +30,15 @@ const SEAM_LINES: Array[Vector2] = [
 
 
 func _draw() -> void:
-	var outline := _silhouette()
-	var closed := outline.duplicate()
-	closed.append(outline[0])
-	draw_polyline(closed, SHADOW, 4.0, true)
-
+	var outline := PackedVector2Array()
+	for p in OUTLINE_POINTS:
+		outline.append(p * size)
 	var hurt_line := size.y * health
 	_fill(outline, Rect2(0, 0, size.x, hurt_line), BODY)
 	_fill(outline, Rect2(0, hurt_line, size.x, size.y - hurt_line), HURT)
-
-	for i in range(0, SEAM_LINES.size(), 2):
-		draw_line(SEAM_LINES[i] * size, SEAM_LINES[i + 1] * size, SEAMS, 1.0, true)
-	draw_polyline(closed, RIM, 1.5, true)
-
-
-func _silhouette() -> PackedVector2Array:
-	var points := PackedVector2Array()
-	for p in RIGHT_HALF:
-		points.append(p * size)
-	for i in range(RIGHT_HALF.size() - 2, 0, -1):
-		points.append(Vector2(1.0 - RIGHT_HALF[i].x, RIGHT_HALF[i].y) * size)
-	return points
+	var closed := outline.duplicate()
+	closed.append(outline[0])
+	draw_polyline(closed, OUTLINE, 1.5, true)
 
 
 ## Fills the part of [param shape] inside [param rect].
