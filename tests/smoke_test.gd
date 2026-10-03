@@ -83,6 +83,52 @@ func _ready() -> void:
 	Input.action_release(&"move_forward")
 	_check(player.state == Player.State.NORMAL, "player gets back up")
 
+	# --- Gamepad ------------------------------------------------------------------
+	_check(GameInput.detect_layout("DualSense Wireless Controller") == GameInput.Layout.PLAYSTATION, "detects a DualSense (PS5)")
+	_check(GameInput.detect_layout("PS4 Controller") == GameInput.Layout.PLAYSTATION, "detects a DualShock 4 (PS4)")
+	_check(GameInput.detect_layout("Unknown", {"vendor_id": 1356}) == GameInput.Layout.PLAYSTATION, "detects Sony by USB vendor id")
+	_check(GameInput.detect_layout("Xbox Series X Controller") == GameInput.Layout.XBOX, "detects an Xbox controller")
+	_check(GameInput.detect_layout("Generic USB Gamepad") == GameInput.Layout.XBOX, "unknown pads use Xbox prompts")
+
+	# Holding the trigger fires once (semi-automatic), even though an analog
+	# trigger keeps sending motion events while held.
+	player.pistol.reload()
+	await _frames(120)
+	var ammo_start := player.pistol.ammo_in_magazine
+	for value in [0.4, 0.8, 1.0, 0.97, 1.0, 0.98, 1.0, 0.97, 1.0, 0.99]:
+		_send_axis(JOY_AXIS_TRIGGER_RIGHT, value)
+		await _frames(6)
+	_check(player.pistol.ammo_in_magazine == ammo_start - 1, "holding the trigger fires a single shot")
+	_check(GameInput.is_using_gamepad(), "gamepad input switches the active layout")
+	_check(GameInput.prompt(&"fire") == "RT", "prompts follow the gamepad layout")
+	_send_axis(JOY_AXIS_TRIGGER_RIGHT, 0.0)
+	await _frames(6)
+	_send_axis(JOY_AXIS_TRIGGER_RIGHT, 1.0)
+	await _frames(6)
+	_send_axis(JOY_AXIS_TRIGGER_RIGHT, 0.0)
+	await _frames(2)
+	_check(player.pistol.ammo_in_magazine == ammo_start - 2, "pulling the trigger again fires again")
+
+	# Right stick aims.
+	var yaw_before: float = player.get(&"_yaw")
+	_send_axis(JOY_AXIS_RIGHT_X, 1.0)
+	await _frames(20)
+	_send_axis(JOY_AXIS_RIGHT_X, 0.0)
+	await _frames(2)
+	_check(player.get(&"_yaw") < yaw_before - 0.1, "right stick turns the camera")
+
+	# Keyboard input switches the prompts back.
+	var key := InputEventKey.new()
+	key.physical_keycode = KEY_W
+	key.pressed = true
+	Input.parse_input_event(key)
+	await _frames(2)
+	key = key.duplicate()
+	key.pressed = false
+	Input.parse_input_event(key)
+	await _frames(2)
+	_check(not GameInput.is_using_gamepad(), "keyboard input switches back to keyboard prompts")
+
 	# --- Reload -----------------------------------------------------------------
 	player.pistol.reload()
 	_check(player.pistol.is_reloading(), "reload starts")
@@ -91,6 +137,14 @@ func _ready() -> void:
 
 	print("\n%s" % ("ALL CHECKS PASSED" if _failures == 0 else "%d CHECK(S) FAILED" % _failures))
 	get_tree().quit(1 if _failures > 0 else 0)
+
+
+func _send_axis(axis: JoyAxis, value: float) -> void:
+	var motion := InputEventJoypadMotion.new()
+	motion.device = 0
+	motion.axis = axis
+	motion.axis_value = value
+	Input.parse_input_event(motion)
 
 
 func _frames(count: int) -> void:

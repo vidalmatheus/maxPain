@@ -33,6 +33,7 @@ var _material: StandardMaterial3D
 func _ready() -> void:
 	health = max_health
 	_spawn_transform = global_transform
+	add_to_group(&"enemies")
 	freeze_mode = RigidBody3D.FREEZE_MODE_KINEMATIC
 	freeze = true
 
@@ -76,6 +77,7 @@ func take_hit(damage: float, point: Vector3, direction: Vector3) -> void:
 
 func _die(point: Vector3, direction: Vector3) -> void:
 	is_dead = true
+	remove_from_group(&"enemies")
 	freeze = false
 	apply_impulse(direction * death_impulse, point - global_position)
 	BulletTime.add_adrenaline(BulletTime.kill_reward)
@@ -90,4 +92,5 @@ func _respawn() -> void:
 	global_transform = _spawn_transform
 	health = max_health
 	is_dead = false
+	add_to_group(&"enemies")
 	_patrol_time = 0.0

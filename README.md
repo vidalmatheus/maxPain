@@ -31,19 +31,34 @@ signature **shootdodge**.
 
 ## Controls
 
-| Action | Keyboard / mouse | Gamepad |
-|---|---|---|
-| Move | WASD / arrows | Left stick |
-| Aim | Mouse | Right stick |
-| Fire | Left click | Right trigger |
-| Jump | Space | A |
-| Bullet time (toggle) | Shift or Q | Right bumper |
-| Shootdodge | Right click + direction | Left trigger / left bumper + direction |
-| Reload | R | X |
-| Help / fullscreen | F1 / F11 | Back |
-| Release mouse | Esc | |
+Keyboard/mouse and controllers (Xbox, PlayStation 5 DualSense, PlayStation 4
+DualShock and other standard gamepads) are supported on desktop and in the
+browser. The controller layout follows Max Payne 3, and the on-screen prompts
+switch automatically to the device you are using.
 
-Right click while standing still toggles bullet time, like in the original game.
+| Action | Keyboard / mouse | Xbox | PlayStation |
+|---|---|---|---|
+| Move | WASD / arrows | Left stick | Left stick |
+| Aim | Mouse | Right stick | Right stick |
+| Fire | Left click | RT | R2 |
+| Shootdodge (with a direction) | Right click | RB or LT | R1 or L2 |
+| Bullet time (toggle) | Shift or Q | LB or R3 (click) | L1 or R3 (click) |
+| Jump | Space | A | Cross |
+| Reload | R | X | Square |
+| Help | F1 | Menu / View | Options / Create |
+| Fullscreen | F11 | | |
+| Release mouse | Esc | | |
+
+The shootdodge button while standing still toggles bullet time, like in the
+original game.
+
+Controller extras:
+
+- **Rumble** when firing and when landing a shootdodge.
+- **Analog aiming** with a response curve for fine adjustments, a turn boost
+  when holding the stick at the edge, and light aim friction while the
+  crosshair is over an enemy.
+- In the browser, press any controller button once so the page detects it.
 
 ## Running the project
 

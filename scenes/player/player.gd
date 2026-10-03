@@ -45,13 +45,23 @@ const AIM_DISTANCE := 200.0
 
 @export_group("Camera")
 @export var mouse_sensitivity := 0.0025
-## Gamepad look speed in radians per real second.
-@export var gamepad_look_speed := 3.0
 @export var min_pitch_degrees := -70.0
 @export var max_pitch_degrees := 65.0
 @export var recoil_degrees := 1.2
 ## How fast the visual model turns and leans (per second of game time).
 @export var body_turn_speed := 14.0
+
+@export_group("Gamepad aiming")
+## Turn speeds at full stick deflection, in radians per real second.
+@export var gamepad_yaw_speed := 3.2
+@export var gamepad_pitch_speed := 2.2
+## Response curve exponent: values above 1 give finer control near the center.
+@export var gamepad_look_exponent := 1.8
+## Extra turn speed after holding the stick at the edge for a moment.
+@export var gamepad_turn_boost := 1.6
+@export var gamepad_turn_boost_delay := 0.25
+## Look speed multiplier while the crosshair is over an enemy ("aim friction").
+@export var aim_friction := 0.45
 
 var state := State.NORMAL
 ## World position the crosshair is currently pointing at.
@@ -63,6 +73,10 @@ var _state_time := 0.0
 var _dive_direction := Vector3.FORWARD
 var _body_rest_height := 0.0
 var _camera_rest_height := 0.0
+var _aiming_at_enemy := false
+var _look_hold_time := 0.0
+## Process frame in which a click captured the mouse; that click must not fire.
+var _capture_click_frame := -1
 
 @onready var visual: Node3D = $Visual
 @onready var body: Node3D = $Visual/Body
@@ -95,32 +109,22 @@ func _unhandled_input(event: InputEvent) -> void:
 	# Clicking the window grabs the mouse; that click must not fire.
 	if event is InputEventMouseButton and event.pressed and not captured:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		_capture_click_frame = Engine.get_process_frames()
 		get_viewport().set_input_as_handled()
 		return
 
-	if event is InputEventMouseMotion and captured:
+	# Browsers can report a bogus jump right after locking the pointer.
+	var just_captured := Engine.get_process_frames() - _capture_click_frame <= 1
+	if event is InputEventMouseMotion and captured and not just_captured:
 		var motion := event as InputEventMouseMotion
 		_add_look(-motion.relative.x * mouse_sensitivity, -motion.relative.y * mouse_sensitivity)
 	elif event.is_action_pressed(&"release_mouse"):
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	elif event.is_action_pressed(&"fire"):
-		_fire()
-	elif event.is_action_pressed(&"reload"):
-		pistol.reload()
-	elif event.is_action_pressed(&"jump"):
-		_try_jump()
-	elif event.is_action_pressed(&"shootdodge"):
-		_try_shootdodge()
-	elif event.is_action_pressed(&"bullet_time"):
-		BulletTime.toggle()
 
 
 func _process(delta: float) -> void:
-	# Gamepad look uses real time so aiming is not slowed by bullet time.
-	var look := Input.get_vector(&"look_left", &"look_right", &"look_up", &"look_down")
-	if look != Vector2.ZERO:
-		var step := gamepad_look_speed * BulletTime.to_real_delta(delta)
-		_add_look(-look.x * step, -look.y * step)
+	_process_actions()
+	_process_gamepad_look(BulletTime.to_real_delta(delta))
 
 	camera_yaw.rotation.y = _yaw
 	camera_pitch.rotation.x = _pitch
@@ -145,6 +149,40 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 
 
+# --- Input -------------------------------------------------------------------
+
+## Actions are polled on state transitions instead of handled per event:
+## analog triggers send a stream of motion events while held, which would
+## otherwise turn the semi-automatic pistol into an automatic one.
+func _process_actions() -> void:
+	if Input.is_action_just_pressed(&"fire") and Engine.get_process_frames() != _capture_click_frame:
+		_fire()
+	if Input.is_action_just_pressed(&"reload"):
+		pistol.reload()
+	if Input.is_action_just_pressed(&"jump"):
+		_try_jump()
+	if Input.is_action_just_pressed(&"shootdodge"):
+		_try_shootdodge()
+	if Input.is_action_just_pressed(&"bullet_time"):
+		BulletTime.toggle()
+
+
+## Right-stick aiming. Uses real time so it is not slowed by bullet time.
+func _process_gamepad_look(real_delta: float) -> void:
+	var look := Input.get_vector(&"look_left", &"look_right", &"look_up", &"look_down")
+	var magnitude := look.length()
+	if magnitude < 0.001:
+		_look_hold_time = 0.0
+		return
+
+	var curved := look / magnitude * pow(minf(magnitude, 1.0), gamepad_look_exponent)
+	_look_hold_time = _look_hold_time + real_delta if magnitude > 0.95 else 0.0
+	var boost := gamepad_turn_boost if _look_hold_time > gamepad_turn_boost_delay else 1.0
+	var friction := aim_friction if _aiming_at_enemy else 1.0
+	var scale := boost * friction * real_delta
+	_add_look(-curved.x * gamepad_yaw_speed * scale, -curved.y * gamepad_pitch_speed * scale)
+
+
 # --- State logic -------------------------------------------------------------
 
 func _physics_normal(delta: float) -> void:
@@ -165,6 +203,7 @@ func _physics_diving(delta: float) -> void:
 	if _state_time > 0.15 and is_on_floor():
 		_set_state(State.PRONE)
 		BulletTime.end_shootdodge()
+		GameInput.rumble(0.4, 0.8, 0.25)
 
 
 func _physics_prone(delta: float) -> void:
@@ -212,6 +251,7 @@ func _fire() -> void:
 		return
 	_update_aim()
 	if pistol.try_fire(aim_point, [get_rid()]):
+		GameInput.rumble(0.3, 0.5, 0.08)
 		_add_look(randf_range(-0.3, 0.3) * deg_to_rad(recoil_degrees), deg_to_rad(recoil_degrees))
 
 
@@ -232,6 +272,8 @@ func _update_aim() -> void:
 	var query := PhysicsRayQueryParameters3D.create(from, to, AIM_MASK, [get_rid()])
 	var hit := get_world_3d().direct_space_state.intersect_ray(query)
 	aim_point = hit["position"] if not hit.is_empty() else to
+	var collider: Object = hit.get("collider")
+	_aiming_at_enemy = collider is Node and (collider as Node).is_in_group(&"enemies")
 
 
 func _update_visual(delta: float) -> void:
