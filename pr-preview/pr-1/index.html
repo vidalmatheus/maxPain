@@ -92,7 +92,7 @@ body {
 		</style>
 		<link id="-gd-engine-icon" rel="icon" type="image/png" href="index.icon.png" />
 <link rel="apple-touch-icon" href="index.apple-touch-icon.png"/>
-<style>html,body,#canvas{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;overscroll-behavior:none;}</style><script>(function(){var stop=function(e){e.preventDefault();};document.addEventListener('gesturestart',stop,{passive:false});document.addEventListener('touchmove',stop,{passive:false});document.addEventListener('contextmenu',stop);document.addEventListener('selectstart',stop);})();</script>
+<style>html,body,#canvas{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;overscroll-behavior:none;}</style><script>(function(){var stop=function(e){e.preventDefault();};document.addEventListener('gesturestart',stop,{passive:false});document.addEventListener('touchmove',stop,{passive:false});document.addEventListener('contextmenu',stop);document.addEventListener('selectstart',stop);var lastTouch=-1e9;var touched=function(){lastTouch=Date.now();};window.addEventListener('touchstart',touched,true);window.addEventListener('touchend',touched,true);var block=function(e){if(Date.now()-lastTouch<1000){e.stopImmediatePropagation();e.preventDefault();}};['mousedown','mouseup','mousemove','click','dblclick'].forEach(function(t){window.addEventListener(t,block,true);});})();</script>
 	</head>
 	<body>
 		<canvas id="canvas">
@@ -111,7 +111,7 @@ body {
 
 		<script src="index.js"></script>
 		<script>
-const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":7856376,"index.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
+const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":7856696,"index.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
 const GODOT_THREADS_ENABLED = false;
 const engine = new Engine(GODOT_CONFIG);
 
