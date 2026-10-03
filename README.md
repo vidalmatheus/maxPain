@@ -81,6 +81,26 @@ Notes:
   the folder over HTTP (for example `python3 -m http.server -d build/web`)
   instead of opening the file directly.
 
+## Continuous builds and GitHub Pages
+
+The workflow in `.github/workflows/build.yml` runs on every push and pull request:
+
+1. Installs Godot (cached between runs), runs the smoke test and exports all
+   four platforms. Desktop builds are available as a downloadable artifact on
+   each workflow run.
+2. On pushes to `main`, publishes the Web build to **GitHub Pages**, so the game
+   is playable at `https://<user>.github.io/<repo>/`.
+3. On tags like `v0.1.0`, creates a **GitHub Release** with the Windows, Linux
+   and macOS builds attached:
+
+   ```sh
+   git tag v0.1.0 && git push origin v0.1.0
+   ```
+
+One-time setup: in the repository's **Settings > Pages**, set **Source** to
+**GitHub Actions**. GitHub Pages requires a public repository on the free plan
+(or a paid plan for private repositories).
+
 ## Tests
 
 A headless smoke test drives the main scene and checks walking, shooting,
@@ -123,4 +143,4 @@ Physics layers: `1 world`, `2 player`, `3 enemies`, `4 props`.
 - [ ] More weapons (dual Berettas, shotgun, ...)
 - [ ] Bullet cam on the last kill
 - [ ] First level and graphic-novel style cutscenes
-- [ ] CI that publishes builds for every platform
+- [x] CI that publishes builds for every platform

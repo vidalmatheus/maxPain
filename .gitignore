@@ -4,6 +4,7 @@
 # Export output (the .gdignore keeps Godot from importing exported files)
 /build/*
 !/build/.gdignore
+/dist/
 
 # Sensitive export credentials
 export_credentials.cfg
