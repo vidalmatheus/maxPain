@@ -18,7 +18,7 @@ signal layout_changed(layout: Layout)
 signal controller_connection_changed(controller_name: String, connected: bool)
 
 ## Which button names to show in prompts.
-enum Layout { KEYBOARD_MOUSE, XBOX, PLAYSTATION }
+enum Layout { KEYBOARD_MOUSE, XBOX, PLAYSTATION, TOUCH }
 
 const DEADZONE := 0.25
 const LOOK_DEADZONE := 0.1
@@ -75,15 +75,15 @@ const LOOK_ACTIONS: Array[StringName] = [&"look_left", &"look_right", &"look_up"
 
 ## Prompt text per action, indexed by Layout.
 const PROMPTS := {
-	&"move": ["WASD", "Left stick", "Left stick"],
-	&"aim": ["Mouse", "Right stick", "Right stick"],
-	&"fire": ["Left click", "RT", "R2"],
-	&"jump": ["Space", "A", "Cross"],
-	&"reload": ["R", "X", "Square"],
-	&"bullet_time": ["Shift / Q", "LB / R3", "L1 / R3"],
-	&"shootdodge": ["Right click", "RB / LT", "R1 / L2"],
-	&"toggle_help": ["F1", "Menu", "Options"],
-	&"next_weapon": ["1 / 2 / Wheel", "Y", "Triangle"],
+	&"move": ["WASD", "Left stick", "Left stick", "Left side"],
+	&"aim": ["Mouse", "Right stick", "Right stick", "Right side"],
+	&"fire": ["Left click", "RT", "R2", "FIRE"],
+	&"jump": ["Space", "A", "Cross", "JUMP"],
+	&"reload": ["R", "X", "Square", "RELOAD"],
+	&"bullet_time": ["Shift / Q", "LB / R3", "L1 / R3", "SLOW"],
+	&"shootdodge": ["Right click", "RB / LT", "R1 / L2", "DODGE"],
+	&"toggle_help": ["F1", "Menu", "Options", "?"],
+	&"next_weapon": ["1 / 2 / Wheel", "Y", "Triangle", "GUN"],
 }
 
 ## Layout used for prompts, based on the last device that sent input.
@@ -102,11 +102,16 @@ func _ready() -> void:
 		for event: InputEvent in defaults[action]:
 			InputMap.action_add_event(action, event)
 	Input.joy_connection_changed.connect(_on_joy_connection_changed)
+	# Phones and tablets (native or in the browser) start with on-screen controls.
+	if OS.has_feature("mobile") or OS.has_feature("web_android") or OS.has_feature("web_ios"):
+		layout = Layout.TOUCH
 
 
 func _input(event: InputEvent) -> void:
 	# Track the device the player is actually using to show matching prompts.
-	if event is InputEventJoypadButton or (event is InputEventJoypadMotion
+	if event is InputEventScreenTouch or event is InputEventScreenDrag:
+		_set_layout(Layout.TOUCH)
+	elif event is InputEventJoypadButton or (event is InputEventJoypadMotion
 			and absf((event as InputEventJoypadMotion).axis_value) > ANALOG_ACTIVITY_THRESHOLD):
 		active_joypad = event.device
 		_set_layout(detect_layout(Input.get_joy_name(event.device), Input.get_joy_info(event.device)))
@@ -130,7 +135,11 @@ func prompt(action: StringName) -> String:
 
 
 func is_using_gamepad() -> bool:
-	return layout != Layout.KEYBOARD_MOUSE
+	return layout == Layout.XBOX or layout == Layout.PLAYSTATION
+
+
+func is_using_touch() -> bool:
+	return layout == Layout.TOUCH
 
 
 ## Vibrates the active gamepad, if the player is using one. Motor strengths

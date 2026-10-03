@@ -163,8 +163,56 @@ func _ready() -> void:
 	_check(player.pistol.ammo_in_magazine == 30, "dual reload refills both magazines")
 	_check(player.pistol.right_gun.has_magazine() and player.pistol.left_gun.has_magazine(), "fresh magazines are inserted")
 
+	# --- Touch controls -----------------------------------------------------------
+	var touch: TouchControls = main.get_node("HUD/TouchControls")
+	var stick := Vector2(200.0, touch.size.y - 150.0)
+	_send_touch(0, stick, true)
+	await _frames(2)
+	_check(GameInput.is_using_touch() and touch.visible, "touching the screen shows the touch controls")
+	var touch_start := player.global_position
+	_send_drag(0, stick + Vector2(0, -80), Vector2(0, -80))
+	await _frames(30)
+	_check(player.global_position.distance_to(touch_start) > 0.5, "the touch joystick moves the player")
+	_send_touch(0, stick + Vector2(0, -80), false)
+	await _frames(10)
+
+	var fire_button := touch.size + Vector2(-150, -190)
+	var ammo_before_tap := player.pistol.ammo_in_magazine
+	_send_touch(1, fire_button, true)
+	await _frames(2)
+	_send_touch(1, fire_button, false)
+	await _frames(2)
+	_check(player.pistol.ammo_in_magazine == ammo_before_tap - 1, "the FIRE button shoots")
+
+	var yaw_before_drag: float = player.get(&"_yaw")
+	var look_start := Vector2(touch.size.x * 0.7, touch.size.y * 0.4)
+	_send_touch(2, look_start, true)
+	_send_drag(2, look_start + Vector2(60, 0), Vector2(60, 0))
+	await _frames(2)
+	_send_touch(2, look_start + Vector2(60, 0), false)
+	_check(not is_equal_approx(player.get(&"_yaw"), yaw_before_drag), "dragging on the right side aims")
+
 	print("\n%s" % ("ALL CHECKS PASSED" if _failures == 0 else "%d CHECK(S) FAILED" % _failures))
 	get_tree().quit(1 if _failures > 0 else 0)
+
+
+## Touch events arrive in window coordinates; [param position] is given in
+## canvas (UI) coordinates and converted, like a real screen would report it.
+func _send_touch(index: int, position: Vector2, pressed: bool) -> void:
+	var event := InputEventScreenTouch.new()
+	event.index = index
+	event.position = get_viewport().get_final_transform() * position
+	event.pressed = pressed
+	Input.parse_input_event(event)
+
+
+func _send_drag(index: int, position: Vector2, relative: Vector2) -> void:
+	var to_window := get_viewport().get_final_transform()
+	var event := InputEventScreenDrag.new()
+	event.index = index
+	event.position = to_window * position
+	event.relative = to_window.basis_xform(relative)
+	Input.parse_input_event(event)
 
 
 func _send_axis(axis: JoyAxis, value: float) -> void:

@@ -3,21 +3,13 @@
 [ext_resource type="Script" path="res://scenes/ui/hud.gd" id="1_hud"]
 [ext_resource type="Script" path="res://scenes/ui/crosshair.gd" id="2_crosshair"]
 [ext_resource type="Shader" path="res://scenes/ui/bullet_time_overlay.gdshader" id="3_overlay"]
+[ext_resource type="Script" path="res://scenes/ui/health_figure.gd" id="4_health"]
+[ext_resource type="Script" path="res://scenes/ui/hourglass.gd" id="5_hourglass"]
+[ext_resource type="Script" path="res://scenes/ui/touch_controls.gd" id="6_touch"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_overlay"]
 shader = ExtResource("3_overlay")
 shader_parameter/intensity = 0.0
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bar_background"]
-bg_color = Color(0, 0, 0, 0.45)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.95, 0.8, 0.55, 0.6)
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bar_fill"]
-bg_color = Color(0.95, 0.75, 0.35, 0.9)
 
 [node name="HUD" type="CanvasLayer"]
 script = ExtResource("1_hud")
@@ -43,36 +35,43 @@ anchor_bottom = 0.5
 mouse_filter = 2
 script = ExtResource("2_crosshair")
 
-[node name="AdrenalineBar" type="ProgressBar" parent="."]
-unique_name_in_owner = true
+[node name="TouchControls" type="Control" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("6_touch")
+
+[node name="Status" type="Control" parent="."]
 anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
-offset_left = 28.0
-offset_top = -204.0
-offset_right = 52.0
-offset_bottom = -44.0
+offset_left = 22.0
+offset_top = -112.0
+offset_right = 112.0
+offset_bottom = -20.0
 grow_vertical = 0
 mouse_filter = 2
-theme_override_styles/background = SubResource("StyleBoxFlat_bar_background")
-theme_override_styles/fill = SubResource("StyleBoxFlat_bar_fill")
-value = 100.0
-fill_mode = 3
-show_percentage = false
 
-[node name="AdrenalineCaption" type="Label" parent="."]
-anchors_preset = 2
-anchor_top = 1.0
-anchor_bottom = 1.0
-offset_left = 16.0
-offset_top = -40.0
-offset_right = 136.0
-offset_bottom = -16.0
-grow_vertical = 0
-theme_override_colors/font_color = Color(0.95, 0.8, 0.55, 0.9)
-theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.8)
-theme_override_font_sizes/font_size = 12
-text = "BULLET TIME"
+[node name="HealthFigure" type="Control" parent="Status"]
+unique_name_in_owner = true
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 92.0
+mouse_filter = 2
+script = ExtResource("4_health")
+
+[node name="Hourglass" type="Control" parent="Status"]
+unique_name_in_owner = true
+anchors_preset = 0
+offset_left = 50.0
+offset_top = 36.0
+offset_right = 72.0
+offset_bottom = 92.0
+mouse_filter = 2
+script = ExtResource("5_hourglass")
 
 [node name="AmmoLabel" type="Label" parent="."]
 unique_name_in_owner = true
@@ -82,14 +81,38 @@ anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = -244.0
-offset_top = -72.0
+offset_top = -76.0
 offset_right = -24.0
-offset_bottom = -24.0
+offset_bottom = -46.0
 grow_horizontal = 0
 grow_vertical = 0
-theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.8)
-theme_override_font_sizes/font_size = 32
-text = "18 / 180"
+theme_override_colors/font_color = Color(0.95, 0.95, 0.93, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.85)
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
+theme_override_font_sizes/font_size = 22
+text = "15 + 180"
+horizontal_alignment = 2
+
+[node name="WeaponLabel" type="Label" parent="."]
+unique_name_in_owner = true
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -244.0
+offset_top = -46.0
+offset_right = -24.0
+offset_bottom = -22.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_colors/font_color = Color(0.95, 0.95, 0.93, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.85)
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
+theme_override_font_sizes/font_size = 15
+text = "Beretta"
 horizontal_alignment = 2
 
 [node name="ReloadLabel" type="Label" parent="."]
@@ -103,48 +126,36 @@ anchor_bottom = 1.0
 offset_left = -244.0
 offset_top = -100.0
 offset_right = -24.0
-offset_bottom = -72.0
+offset_bottom = -78.0
 grow_horizontal = 0
 grow_vertical = 0
 theme_override_colors/font_color = Color(0.95, 0.8, 0.55, 1)
-theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.8)
-theme_override_font_sizes/font_size = 16
-text = "RELOADING"
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.85)
+theme_override_font_sizes/font_size = 13
+text = "Reloading"
 horizontal_alignment = 2
 
-[node name="WeaponLabel" type="Label" parent="."]
+[node name="HelpHint" type="Label" parent="."]
 unique_name_in_owner = true
-anchors_preset = 3
-anchor_left = 1.0
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -244.0
-offset_top = -128.0
-offset_right = -24.0
-offset_bottom = -104.0
-grow_horizontal = 0
-grow_vertical = 0
-theme_override_colors/font_color = Color(0.95, 0.8, 0.55, 0.9)
+offset_left = 16.0
+offset_top = 12.0
+offset_right = 316.0
+offset_bottom = 34.0
+theme_override_colors/font_color = Color(1, 1, 1, 0.55)
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.8)
-theme_override_font_sizes/font_size = 14
-text = "BERETTA"
-horizontal_alignment = 2
+theme_override_font_sizes/font_size = 13
+text = "F1: controls"
 
 [node name="HelpLabel" type="Label" parent="."]
 unique_name_in_owner = true
+visible = false
 offset_left = 16.0
-offset_top = 16.0
-offset_right = 456.0
-offset_bottom = 196.0
+offset_top = 36.0
+offset_right = 516.0
+offset_bottom = 216.0
 theme_override_colors/font_color = Color(1, 1, 1, 0.85)
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.8)
 theme_override_font_sizes/font_size = 14
-text = "WASD: move      Mouse: aim      Left click: fire
-Space: jump      R: reload      Shift / Q: bullet time
-Right click + direction: shootdodge
-Right click standing still: bullet time
-F1: help      F11: fullscreen      Esc: release mouse"
 
 [node name="CaptureHint" type="Label" parent="."]
 unique_name_in_owner = true
@@ -180,3 +191,27 @@ theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.8)
 theme_override_font_sizes/font_size = 18
 text = "Controller connected"
 horizontal_alignment = 1
+
+[node name="RotateOverlay" type="ColorRect" parent="."]
+unique_name_in_owner = true
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.03, 0.03, 0.04, 0.94)
+
+[node name="RotateLabel" type="Label" parent="RotateOverlay"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(0.95, 0.95, 0.93, 1)
+theme_override_font_sizes/font_size = 64
+text = "Rotate your device
+to play in landscape"
+horizontal_alignment = 1
+vertical_alignment = 1

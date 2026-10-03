@@ -1,7 +1,8 @@
 extends CanvasLayer
-## In-game HUD: crosshair, adrenaline meter, ammo counter, controls help and
-## the full-screen bullet-time effect. Button prompts follow the device the
-## player is using (keyboard/mouse, Xbox or PlayStation controller).
+## In-game HUD in the style of the original game: a health silhouette and a
+## bullet-time hourglass at the bottom left, ammo and weapon name at the
+## bottom right, a dot crosshair, plus the bullet-time screen effect, touch
+## controls on phones and tablets, and a controls help panel.
 
 const TOAST_DURATION := 3.0
 
@@ -10,13 +11,16 @@ const TOAST_DURATION := 3.0
 var _toast_time_left := 0.0
 
 @onready var overlay: ColorRect = %BulletTimeOverlay
-@onready var adrenaline_bar: ProgressBar = %AdrenalineBar
+@onready var health_figure: HealthFigure = %HealthFigure
+@onready var hourglass: Hourglass = %Hourglass
 @onready var ammo_label: Label = %AmmoLabel
 @onready var weapon_label: Label = %WeaponLabel
 @onready var reload_label: Label = %ReloadLabel
+@onready var help_hint: Label = %HelpHint
 @onready var help_label: Label = %HelpLabel
 @onready var capture_hint: Label = %CaptureHint
 @onready var toast_label: Label = %ToastLabel
+@onready var rotate_overlay: ColorRect = %RotateOverlay
 
 
 func _ready() -> void:
@@ -37,8 +41,14 @@ func _process(delta: float) -> void:
 	var blend := BulletTime.get_blend()
 	overlay.visible = blend > 0.01
 	(overlay.material as ShaderMaterial).set_shader_parameter(&"intensity", blend)
-	capture_hint.visible = Input.mouse_mode != Input.MOUSE_MODE_CAPTURED and not GameInput.is_using_gamepad()
+	hourglass.flowing = BulletTime.is_active
+
+	var touch := GameInput.is_using_touch()
+	capture_hint.visible = not touch and not GameInput.is_using_gamepad() \
+			and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED
 	reload_label.visible = player != null and player.pistol.is_reloading()
+	var screen := get_viewport().get_visible_rect().size
+	rotate_overlay.visible = touch and screen.y > screen.x
 
 	if _toast_time_left > 0.0:
 		_toast_time_left -= BulletTime.to_real_delta(delta)
@@ -51,6 +61,11 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _refresh_help() -> void:
+	var touch := GameInput.is_using_touch()
+	help_hint.visible = not touch
+	help_hint.text = "%s: controls" % GameInput.prompt(&"toggle_help")
+	if touch:
+		help_label.visible = false
 	var lines := PackedStringArray([
 		"%s: move      %s: aim      %s: fire" % _prompts([&"move", &"aim", &"fire"]),
 		"%s: jump      %s: reload      %s: bullet time" % _prompts([&"jump", &"reload", &"bullet_time"]),
@@ -58,10 +73,8 @@ func _refresh_help() -> void:
 		"%s standing still: bullet time" % GameInput.prompt(&"shootdodge"),
 		"%s: Beretta / dual Berettas" % GameInput.prompt(&"next_weapon"),
 	])
-	if GameInput.is_using_gamepad():
-		lines.append("%s: help" % GameInput.prompt(&"toggle_help"))
-	else:
-		lines.append("F1: help      F11: fullscreen      Esc: release mouse")
+	if GameInput.layout == GameInput.Layout.KEYBOARD_MOUSE:
+		lines.append("F11: fullscreen      Esc: release mouse")
 	help_label.text = "\n".join(lines)
 
 
@@ -84,13 +97,12 @@ func _on_controller_connection_changed(controller_name: String, connected: bool)
 
 
 func _on_adrenaline_changed(value: float, max_value: float) -> void:
-	adrenaline_bar.max_value = max_value
-	adrenaline_bar.value = value
+	hourglass.fill = value / max_value
 
 
 func _on_weapon_mode_changed(dual: bool) -> void:
-	weapon_label.text = "DUAL BERETTAS" if dual else "BERETTA"
+	weapon_label.text = "Dual Berettas" if dual else "Beretta"
 
 
 func _on_ammo_changed(in_magazine: int, reserve: int) -> void:
-	ammo_label.text = "%d / %d" % [in_magazine, reserve]
+	ammo_label.text = "%d + %d" % [in_magazine, reserve]

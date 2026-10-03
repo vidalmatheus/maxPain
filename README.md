@@ -32,6 +32,12 @@ signature **shootdodge**.
 - **Shootdodge**: dive in any direction in slow motion, keep shooting while
   airborne, land on the ground (you can still shoot while prone) and get back
   up.
+- **Max Payne 1 style HUD**: a health silhouette and a bullet-time hourglass
+  (the sand is your adrenaline) at the bottom left, rounds as "magazine +
+  reserve" and the weapon name at the bottom right, and a dot crosshair.
+- **Phones and tablets**: on-screen controls in the browser (or a native
+  mobile build), fullscreen landscape on the first touch, and a "rotate your
+  device" hint when held upright.
 - **Practice targets**: headshots deal triple damage; targets topple over
   physically when killed and respawn. Some of them patrol.
 
@@ -58,6 +64,13 @@ switch automatically to the device you are using.
 
 The shootdodge button while standing still toggles bullet time, like in the
 original game.
+
+On phones and tablets the touch controls appear automatically: a floating
+joystick on the left half of the screen to move, drag anywhere on the right
+half to aim, and buttons for FIRE, DODGE (shootdodge with the joystick held in
+a direction), SLOW (bullet time), JUMP, RELOAD and GUN (one or two Berettas).
+The game goes fullscreen in landscape on the first touch; on iPhones, which
+don't allow locking the orientation from the browser, just rotate the phone.
 
 Controller extras:
 

@@ -378,6 +378,11 @@ func _get_dive_body_basis() -> Basis:
 
 # --- Helpers -----------------------------------------------------------------
 
+## Turns the camera by the given angles (radians). Used by the touch controls.
+func look(yaw_delta: float, pitch_delta: float) -> void:
+	_add_look(yaw_delta, pitch_delta)
+
+
 func _add_look(yaw_delta: float, pitch_delta: float) -> void:
 	_yaw = wrapf(_yaw + yaw_delta, -PI, PI)
 	_pitch = clampf(_pitch + pitch_delta, deg_to_rad(min_pitch_degrees), deg_to_rad(max_pitch_degrees))
