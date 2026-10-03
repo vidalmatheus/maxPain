@@ -195,6 +195,7 @@ scenes/
 tests/                 Headless smoke test and screenshot sequence
 assets/characters/     Character model, rig and animations (see its README)
 assets/weapons/        Weapon models (see their READMEs)
+assets/fonts/          HUD font and its license
 tools/export.sh        Exports builds into build/<platform>/
 tools/build_character.gd  Rigs the character and extracts its animations
 .github/               CI: Pages deploy, PR previews, releases
@@ -223,6 +224,8 @@ Physics layers: `1 world`, `2 player`, `3 enemies`, `4 props`.
   [BimboCattibo90](https://sketchfab.com/stefanocagnani1990) on
   [Sketchfab](https://sketchfab.com/3d-models/max-payne-1-b6ffa273ad774c66a2ff202d85f58e94),
   CC BY 4.0. The character is owned by Remedy Entertainment / Rockstar Games.
+- **HUD font:** [Oswald](https://fonts.google.com/specimen/Oswald) by the
+  Oswald Project Authors, SIL Open Font License 1.1.
 - **Beretta model:** "Beretta M9" by
   [emran.bayati](https://sketchfab.com/emran.bayati) on
   [Sketchfab](https://sketchfab.com/3d-models/beretta-m9-d1200d9aa28f466484f7d3fdd7724e76),
