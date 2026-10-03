@@ -71,7 +71,7 @@ func play_fire() -> void:
 	muzzle_flash.visible = true
 	muzzle_flash.rotation.z = randf() * TAU
 	_kick = kick_distance
-	SoundFx.play_3d(SHOT_SOUND, muzzle.global_position, 0.0, randf_range(0.94, 1.06), 20.0)
+	SoundFx.play_3d(SHOT_SOUND, muzzle.global_position, -7.0, randf_range(0.94, 1.06), 20.0)
 	_eject_casing()
 
 
