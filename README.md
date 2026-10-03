@@ -10,10 +10,14 @@ signature **shootdodge**.
 | ![Bullet time](docs/screenshots/bullet_time.png) | ![Shootdodge](docs/screenshots/shootdodge.png) |
 
 > Max Payne is a trademark of Remedy Entertainment / Rockstar Games. This is a
-> non-commercial learning project and uses no original assets.
+> non-commercial fan project. The character model comes from Sketchfab and the
+> animations are CC0; see [Credits](#credits).
 
 ## Features
 
+- **Animated Max Payne** model with Max Payne 3 style upper/lower body
+  blending: the legs run in the movement direction (forwards or backwards)
+  while the spine twists so the upper body and pistol always face the aim.
 - **Third-person controller**: over-the-shoulder camera, the character always
   faces the aim direction and strafes/backpedals while shooting.
 - **Bullet time**: eases the world to 30% speed while mouse aiming stays fully
@@ -144,6 +148,19 @@ A second scene plays a scripted sequence and saves screenshots plus an
 godot --path . res://tests/screenshots.tscn -- --output=/tmp/shots
 ```
 
+## Character pipeline
+
+The character model has no skeleton, so `tools/build_character.gd` rigs it
+without Blender: it scales Quaternius' humanoid skeleton to Max, bends the
+arms and legs onto the mesh and weights each vertex to the nearest bones of its
+body part. It also extracts the animations the game uses. See
+[assets/characters/max_payne/README.md](assets/characters/max_payne/README.md).
+
+```sh
+godot --headless --path . --import
+godot --headless --path . -s tools/build_character.gd -- --source=<animation packs dir>
+```
+
 ## Project layout
 
 ```
@@ -152,14 +169,16 @@ autoload/
   game_input.gd        Default input bindings (keyboard, mouse, gamepad)
 scenes/
   main.tscn            Test arena
-  player/              Player controller, camera and placeholder model
+  player/              Player controller, camera and animated character model
   weapons/             Pistol and bullet
   targets/             Practice target dummy
   props/               Physics crate
   fx/                  Impact particles
   ui/                  HUD, crosshair and bullet-time screen shader
 tests/                 Headless smoke test and screenshot sequence
+assets/characters/     Character model, rig and animations (see its README)
 tools/export.sh        Exports builds into build/<platform>/
+tools/build_character.gd  Rigs the character and extracts its animations
 .github/               CI: Pages deploy, PR previews, releases
 ```
 
@@ -171,10 +190,19 @@ Physics layers: `1 world`, `2 player`, `3 enemies`, `4 props`.
 - [x] Bullet time with adrenaline
 - [x] Pistol with physical bullets
 - [x] Shootdodge
-- [ ] Animated character model (e.g. Mixamo) replacing the box placeholder
+- [x] Animated character model
 - [ ] Sound effects and music
 - [ ] Enemy AI that shoots back, player health and painkillers
 - [ ] More weapons (dual Berettas, shotgun, ...)
 - [ ] Bullet cam on the last kill
 - [ ] First level and graphic-novel style cutscenes
 - [x] CI that publishes builds for every platform
+
+## Credits
+
+- **Max Payne model:** "Max Payne 1" by
+  [BimboCattibo90](https://sketchfab.com/stefanocagnani1990) on
+  [Sketchfab](https://sketchfab.com/3d-models/max-payne-1-b6ffa273ad774c66a2ff202d85f58e94),
+  CC BY 4.0. The character is owned by Remedy Entertainment / Rockstar Games.
+- **Animations:** Universal Animation Library 1 and 2 by
+  [Quaternius](https://quaternius.com), CC0.

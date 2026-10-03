@@ -77,11 +77,13 @@ var _aiming_at_enemy := false
 var _look_hold_time := 0.0
 ## Process frame in which a click captured the mouse; that click must not fire.
 var _capture_click_frame := -1
+## Whether the legs currently play the run cycle backwards (with hysteresis).
+var _running_backwards := false
 
 @onready var visual: Node3D = $Visual
 @onready var body: Node3D = $Visual/Body
-@onready var arm_pivot: Node3D = $Visual/Body/ArmPivot
-@onready var pistol: Pistol = $Visual/Body/ArmPivot/Pistol
+@onready var model: CharacterModel = $Visual/Body/Model
+@onready var pistol: Pistol = $Visual/Pistol
 @onready var camera_yaw: Node3D = $CameraYaw
 @onready var camera_pitch: Node3D = $CameraYaw/CameraPitch
 @onready var spring_arm: SpringArm3D = $CameraYaw/CameraPitch/SpringArm3D
@@ -96,6 +98,7 @@ func _ready() -> void:
 	rotation = Vector3.ZERO
 	visual.rotation.y = _yaw
 	_body_rest_height = body.position.y
+	pistol.reload_started.connect(model.play_reload)
 	_camera_rest_height = camera_yaw.position.y
 	# Browsers only allow pointer lock after a user gesture, so on the web
 	# the first click captures the mouse instead (see _unhandled_input).
@@ -251,6 +254,7 @@ func _fire() -> void:
 		return
 	_update_aim()
 	if pistol.try_fire(aim_point, [get_rid()]):
+		model.play_fire()
 		GameInput.rumble(0.3, 0.5, 0.08)
 		_add_look(randf_range(-0.3, 0.3) * deg_to_rad(recoil_degrees), deg_to_rad(recoil_degrees))
 
@@ -278,7 +282,8 @@ func _update_aim() -> void:
 
 func _update_visual(delta: float) -> void:
 	var weight := _blend(body_turn_speed, delta)
-	visual.rotation.y = lerp_angle(visual.rotation.y, _yaw, weight)
+	var locomotion := _update_locomotion()
+	visual.rotation.y = lerp_angle(visual.rotation.y, _yaw + locomotion, weight)
 
 	var target_basis := visual.global_basis
 	var target_height := _body_rest_height
@@ -293,7 +298,53 @@ func _update_visual(delta: float) -> void:
 	body.global_basis = Basis(current.slerp(target_basis.get_rotation_quaternion(), weight))
 	body.position.y = lerpf(body.position.y, target_height, weight)
 
-	_point_at(arm_pivot, aim_point)
+	model.aim_at(aim_point)
+	_hold_pistol()
+
+
+## Picks the leg animation and returns how far (radians) the hips turn away
+## from the aim: when strafing, the legs face the movement (running forwards
+## or backwards, whichever is closer) and the spine twists back to the aim.
+func _update_locomotion() -> float:
+	var ground_velocity := Vector3(velocity.x, 0.0, velocity.z)
+	var speed := ground_velocity.length()
+	match state:
+		State.DIVING:
+			model.set_locomotion(CharacterModel.Locomotion.AIR, 0.0)
+			return 0.0
+		State.PRONE:
+			model.set_locomotion(CharacterModel.Locomotion.IDLE, 0.0)
+			return 0.0
+		State.GETTING_UP:
+			model.set_locomotion(CharacterModel.Locomotion.CROUCH, 0.0)
+			return 0.0
+	if not is_on_floor():
+		model.set_locomotion(CharacterModel.Locomotion.AIR, 0.0)
+		return 0.0
+	if speed < 0.5:
+		model.set_locomotion(CharacterModel.Locomotion.IDLE, 0.0)
+		return 0.0
+
+	var relative := wrapf(atan2(-ground_velocity.x, -ground_velocity.z) - _yaw, -PI, PI)
+	var threshold := PI * 0.5 + (-0.25 if _running_backwards else 0.25)
+	_running_backwards = absf(relative) > threshold
+	if _running_backwards:
+		model.set_locomotion(CharacterModel.Locomotion.RUN_BACK, speed)
+		return wrapf(relative - PI, -PI, PI)
+	model.set_locomotion(CharacterModel.Locomotion.RUN, speed)
+	return relative
+
+
+## Keeps the pistol in the right hand, pointing exactly at the crosshair.
+func _hold_pistol() -> void:
+	var hand := model.get_hand_position()
+	var to_target := aim_point - hand
+	if to_target.length_squared() < 0.04:
+		return
+	var up := body.global_basis.y
+	if absf(to_target.normalized().dot(up)) > 0.98:
+		up = body.global_basis.z
+	pistol.global_transform = Transform3D(Basis.looking_at(to_target, up), hand)
 
 
 ## Orientation of the body while diving: the head points along the dive and
@@ -310,16 +361,6 @@ func _get_dive_body_basis() -> Basis:
 	var right := head.cross(back).normalized()
 	back = right.cross(head).normalized()
 	return Basis(right, head, back)
-
-
-func _point_at(node: Node3D, target: Vector3) -> void:
-	var to_target := target - node.global_position
-	if to_target.length_squared() < 0.04:
-		return
-	var up := Vector3.UP
-	if absf(to_target.normalized().dot(Vector3.UP)) > 0.98:
-		up = visual.global_basis.z
-	node.look_at(target, up)
 
 
 # --- Helpers -----------------------------------------------------------------
