@@ -4,7 +4,7 @@ extends Node
 ## outside camera, to review the character's poses and how it holds the guns.
 ##
 ## Run with (needs a renderer, like tests/screenshots.tscn):
-##   godot --path . res://tests/pose_gallery.tscn -- --output=<directory> [--only=stand]
+##   godot --path . res://tests/pose_gallery.tscn -- --output=<directory> [--only=stand|whip]
 
 const MAIN_SCENE := preload("res://scenes/main.tscn")
 
@@ -50,11 +50,16 @@ func _ready() -> void:
 	BulletTime.adrenaline_changed.connect(func(_v: float, _m: float) -> void: BulletTime.adrenaline = BulletTime.max_adrenaline)
 	await _physics_frames(30)
 
-	await _stand_shots("single")
-	_player.pistol.set_dual(true)
-	await _game_seconds(0.5)
-	await _stand_shots("dual")
+	for dual in [false, true]:
+		_player.pistol.set_dual(dual)
+		await _game_seconds(0.5)
+		if _only != "whip":
+			await _stand_shots("dual" if dual else "single")
+		await _whip_shots("dual" if dual else "single")
 	_player.pistol.set_dual(false)
+	if _only == "whip":
+		get_tree().quit()
+		return
 
 	# Running while aiming forward: legs follow the movement, the upper body
 	# twists back to the aim.
@@ -77,6 +82,19 @@ func _stand_shots(label: String) -> void:
 	await _capture(label + "_stand", [Vector3(2.2, 1.5, -1.2), Vector3(-1.6, 1.4, -2.0), Vector3(2.6, 1.2, 0.6)])
 	# Close-ups of the hands: from the right, from the front-left, from above.
 	await _capture(label + "_hands", [Vector3(0.45, 0.68, -0.45), Vector3(-0.45, 0.68, -0.45), Vector3(0.05, 1.0, -0.3)], 1.42)
+
+
+## The pistol-whip frozen at a few points of the swing: raised, chopping
+## down, the blow, and the way back.
+func _whip_shots(label: String) -> void:
+	_reset_player()
+	await _game_seconds(0.4)
+	var arms: ArmIKModifier = _player.model.get(&"_arms")
+	for phase: float in [0.3, 0.45, 0.5, 0.75]:
+		arms.strike = phase
+		await _physics_frames(3)
+		await _capture("whip_%s_%d" % [label, roundi(phase * 100)], [Vector3(2.4, 1.3, -0.8)])
+	arms.strike = 0.0
 
 
 func _run_shots(label: String, input: Vector2) -> void:

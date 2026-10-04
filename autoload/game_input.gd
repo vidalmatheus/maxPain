@@ -51,11 +51,13 @@ const KEYS := {
 	&"take_cover": [KEY_C, KEY_CTRL],
 	&"use_painkiller": [KEY_TAB, KEY_H, KEY_E],
 	&"pause": [KEY_P, KEY_ESCAPE],
+	&"melee": [KEY_V, KEY_F],
 }
 
 const MOUSE_BUTTONS := {
 	&"fire": [MOUSE_BUTTON_LEFT],
 	&"shootdodge": [MOUSE_BUTTON_RIGHT],
+	&"melee": [MOUSE_BUTTON_MIDDLE],
 	&"next_weapon": [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN],
 }
 
@@ -64,8 +66,11 @@ const MOUSE_BUTTONS := {
 const JOY_BUTTONS := {
 	&"jump": [JOY_BUTTON_A],
 	&"reload": [JOY_BUTTON_X],
-	&"bullet_time": [JOY_BUTTON_LEFT_SHOULDER, JOY_BUTTON_RIGHT_STICK],
-	&"shootdodge": [JOY_BUTTON_RIGHT_SHOULDER],
+	&"bullet_time": [JOY_BUTTON_LEFT_SHOULDER],
+	# Like Shift: with a direction it dives, standing still it toggles
+	# bullet time.
+	&"shootdodge": [JOY_BUTTON_RIGHT_STICK],
+	&"melee": [JOY_BUTTON_RIGHT_SHOULDER],
 	&"toggle_help": [JOY_BUTTON_BACK],
 	&"pause": [JOY_BUTTON_START],
 	&"take_cover": [JOY_BUTTON_B],
@@ -103,8 +108,9 @@ const PROMPTS := {
 	&"fire": ["Left click", "RT", "R2", "FIRE"],
 	&"jump": ["Space", "A", "Cross", "JUMP"],
 	&"reload": ["R", "X", "Square", "RELOAD"],
-	&"bullet_time": ["Q", "LB / R3", "L1 / R3", "SLOW"],
-	&"shootdodge": ["Right click / Shift", "RB / LT", "R1 / L2", "DODGE"],
+	&"bullet_time": ["Q", "LB", "L1", "SLOW"],
+	&"shootdodge": ["Right click / Shift", "R3 / LT", "R3 / L2", "DODGE"],
+	&"melee": ["V / Middle click", "RB", "R1", "WHIP"],
 	&"toggle_help": ["F1", "View", "Create", "?"],
 	&"pause": ["Esc / P", "Menu", "Options", "II"],
 	&"take_cover": ["C", "B", "Circle", "COVER"],

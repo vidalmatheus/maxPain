@@ -28,6 +28,8 @@ const CLOTHES := [
 	[Color(0.25, 0.28, 0.45), Color(0.3, 0.3, 0.32)],
 ]
 const CORPSE_TIME := 9.0
+## Seconds a mobster reels after a pistol-whip, unable to shoot.
+const STAGGER_TIME := 0.9
 
 @export var run_speed := 4.2
 @export var strafe_speed := 1.6
@@ -67,6 +69,7 @@ var _cover_point := Vector3.ZERO
 var _cover_time := 0.0
 var _aim_point := Vector3.ZERO
 var _running_backwards := false
+var _stagger_timer := 0.0
 
 @onready var visual: Node3D = $Visual
 @onready var model: CharacterModel = $Visual/Model
@@ -108,6 +111,11 @@ func _physics_process(delta: float) -> void:
 		return
 	if target == null or target.state == Player.State.DEAD:
 		_idle(delta)
+		return
+	if _stagger_timer > 0.0:
+		_stagger_timer -= delta
+		_idle(delta)
+		_update_visual(delta)
 		return
 
 	_think_timer -= delta
@@ -370,6 +378,16 @@ func take_hit(damage: float, point: Vector3, direction: Vector3) -> void:
 		_die(direction)
 	elif state != State.COVER and health < Game.setting("enemy_health") * 0.6 and randf() < 0.6:
 		_seek_cover()
+
+
+## Knocked back by a pistol-whip: reels for a moment, unable to shoot.
+func stagger(push: Vector3) -> void:
+	if state == State.DEAD:
+		return
+	_stagger_timer = STAGGER_TIME
+	_burst_left = 0
+	_shot_timer = maxf(_shot_timer, 0.3)
+	velocity = Vector3(push.x, 0.0, push.z)
 
 
 func _die(direction: Vector3) -> void:

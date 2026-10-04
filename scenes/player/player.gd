@@ -11,7 +11,8 @@ extends CharacterBody3D
 ##
 ## Max can take cover behind walls, cars and barriers (crouching behind low
 ## cover and popping up to shoot), gets hurt by enemy bullets and heals with
-## painkillers, like in the original game.
+## painkillers, like in the original game. Holding the trigger keeps firing
+## at a steady cadence, and up close he can pistol-whip a mobster.
 
 signal state_changed(new_state: State)
 signal health_changed(health: float, max_health: float)
@@ -36,6 +37,8 @@ const BLOOD_COLOR := Color(0.6, 0.04, 0.04)
 ## Collision capsule height standing and crouched behind cover.
 const STAND_HEIGHT := 1.8
 const CROUCH_HEIGHT := 1.1
+const MELEE_SWING_SOUND := preload("res://assets/sounds/melee_swing.ogg")
+const MELEE_HIT_SOUND := preload("res://assets/sounds/melee_hit.ogg")
 
 @export_group("Movement")
 @export var run_speed := 5.5
@@ -58,6 +61,21 @@ const CROUCH_HEIGHT := 1.1
 @export var prone_friction := 10.0
 @export var prone_body_height := 0.22
 @export var prone_camera_height := 0.8
+
+@export_group("Firing")
+## Seconds between shots while the trigger is held down.
+@export var auto_fire_interval := 0.2
+@export var dual_auto_fire_interval := 0.13
+
+@export_group("Melee")
+@export var melee_damage := 60.0
+## How far in front of Max a pistol-whip reaches.
+@export var melee_range := 1.9
+## Length of the swing; the blow lands halfway through.
+@export var melee_time := 0.42
+@export var melee_cooldown := 0.65
+## Speed (m/s) the blow knocks a mobster back with.
+@export var melee_push := 4.0
 
 @export_group("Health")
 @export var max_health := 100.0
@@ -130,6 +148,13 @@ var _cover_low := false
 var _cover_popup := 0.0
 ## Time left before a shot queued while popping up from cover.
 var _pending_fire := -1.0
+## Whether the trigger has been held since a shot, and the time to the next
+## automatic one.
+var _fire_held := false
+var _auto_fire_timer := 0.0
+var _melee_cooldown := 0.0
+## Time until the blow of the current swing lands, or < 0 when not swinging.
+var _melee_hit_timer := -1.0
 
 @onready var visual: Node3D = $Visual
 @onready var body: Node3D = $Visual/Body
@@ -205,6 +230,7 @@ func _process(delta: float) -> void:
 func _physics_process(delta: float) -> void:
 	_state_time += delta
 	_process_healing(delta)
+	_process_melee(delta)
 	match state:
 		State.NORMAL:
 			_physics_normal(delta)
@@ -235,7 +261,19 @@ func _process_actions() -> void:
 		if _pending_fire < 0.0:
 			_fire()
 	if Input.is_action_just_pressed(&"fire") and Engine.get_process_frames() != _capture_click_frame:
+		_fire_held = true
+		_auto_fire_timer = _auto_fire_interval()
 		_fire()
+	elif _fire_held:
+		if not Input.is_action_pressed(&"fire"):
+			_fire_held = false
+		else:
+			_auto_fire_timer -= get_process_delta_time()
+			if _auto_fire_timer <= 0.0:
+				_auto_fire_timer = maxf(_auto_fire_timer + _auto_fire_interval(), 0.0)
+				_fire()
+	if Input.is_action_just_pressed(&"melee"):
+		melee()
 	if Input.is_action_just_pressed(&"take_cover"):
 		if state == State.COVER:
 			_leave_cover()
@@ -357,6 +395,63 @@ func _fire() -> void:
 		model.play_fire()
 		GameInput.rumble(0.3, 0.5, 0.08)
 		_add_look(randf_range(-0.3, 0.3) * deg_to_rad(recoil_degrees), deg_to_rad(recoil_degrees))
+
+
+func _auto_fire_interval() -> float:
+	return dual_auto_fire_interval if pistol.dual else auto_fire_interval
+
+
+# --- Melee ---------------------------------------------------------------------
+
+## Swings the gun at whoever is right in front. Returns true if Max swung.
+func melee() -> bool:
+	if state == State.COVER:
+		_leave_cover()
+	if state != State.NORMAL or _melee_cooldown > 0.0 or pistol.is_reloading():
+		return false
+	_melee_cooldown = melee_cooldown
+	_melee_hit_timer = melee_time * 0.5
+	model.play_melee(melee_time)
+	SoundFx.play_3d(MELEE_SWING_SOUND, global_position + Vector3(0, 1.4, 0), -6.0, randf_range(0.9, 1.1), 4.0)
+	return true
+
+
+func _process_melee(delta: float) -> void:
+	_melee_cooldown = maxf(_melee_cooldown - delta, 0.0)
+	if _melee_hit_timer < 0.0:
+		return
+	_melee_hit_timer -= delta
+	if _melee_hit_timer < 0.0 and state != State.DEAD:
+		_land_melee()
+
+
+## The blow lands on the closest enemy within reach in front of Max.
+func _land_melee() -> void:
+	var forward := _get_aim_forward()
+	var victim: Node3D = null
+	var closest := melee_range
+	for enemy: Node3D in get_tree().get_nodes_in_group(&"enemies"):
+		var offset := enemy.global_position - global_position
+		if absf(offset.y) > 1.2:
+			continue
+		offset.y = 0.0
+		var distance := offset.length()
+		if distance > closest or (distance > 0.3 and offset.normalized().dot(forward) < 0.5):
+			continue
+		victim = enemy
+		closest = distance
+	if victim == null:
+		return
+	var direction := victim.global_position - global_position
+	direction.y = 0.0
+	direction = direction.normalized() if direction.length_squared() > 0.0001 else forward
+	# Below the head (even a crouching mobster's): a pistol-whip is no headshot.
+	var point := victim.global_position + Vector3(0, 0.85, 0) - direction * 0.25
+	victim.call(&"take_hit", melee_damage, point, direction)
+	if victim.has_method(&"stagger"):
+		victim.call(&"stagger", direction * melee_push)
+	SoundFx.play_3d(MELEE_HIT_SOUND, point, 0.0, randf_range(0.9, 1.05), 6.0)
+	GameInput.rumble(0.7, 0.9, 0.18)
 
 
 # --- Cover ---------------------------------------------------------------------
@@ -485,6 +580,8 @@ func take_hit(damage: float, point: Vector3, direction: Vector3) -> void:
 func _die() -> void:
 	_healing = 0.0
 	_pending_fire = -1.0
+	_fire_held = false
+	_melee_hit_timer = -1.0
 	_set_state(State.DEAD)
 	BulletTime.end_shootdodge()
 	model.play_death()

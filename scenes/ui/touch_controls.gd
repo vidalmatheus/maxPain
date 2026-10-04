@@ -4,8 +4,8 @@ extends Control
 ## as the HUD:
 ## - left half: a floating joystick (it appears where the thumb lands) to move,
 ## - right half: drag anywhere to aim,
-## - buttons for firing, shootdodge, bullet time, jumping, reloading and
-##   switching weapons.
+## - buttons for firing, shootdodge, bullet time, jumping, reloading,
+##   switching weapons, cover, painkillers and the pistol-whip.
 ##
 ## The controls press the same input actions as the keyboard and gamepads, so
 ## the player code does not need to know about touch. Multi-touch is fully
@@ -21,6 +21,7 @@ const BUTTONS := [
 	{"action": &"next_weapon", "label": "GUN", "offset": Vector2(-70, -500), "radius": 42.0},
 	{"action": &"take_cover", "label": "COVER", "offset": Vector2(-290, -460), "radius": 44.0},
 	{"action": &"use_painkiller", "label": "PILL", "offset": Vector2(-460, -250), "radius": 40.0},
+	{"action": &"melee", "label": "WHIP", "offset": Vector2(-450, -410), "radius": 40.0},
 ]
 ## Buttons positioned from the top-right corner.
 const TOP_BUTTONS := [

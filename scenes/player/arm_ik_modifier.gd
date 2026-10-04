@@ -59,6 +59,9 @@ var extend := 0.0
 var stance := Stance.TWO_HANDED
 ## 1 right after a shot, decaying to 0.
 var recoil := 0.0
+## Progress through a pistol-whip, 0..1 (0 when not swinging): the right gun
+## is raised, muzzle up, then brought down butt first and back to the aim.
+var strike := 0.0
 
 ## Per side: the hand's frame (fingers, palm normal) in the hand bone's local
 ## space. Built from the rest pose.
@@ -88,11 +91,11 @@ func _process_modification() -> void:
 	if stance == Stance.TWO_HANDED:
 		var center := (shoulder_r + shoulder_l) * 0.5 + body_up * 0.03
 		var reach := lerpf(TWO_HANDED_REACH, TWO_HANDED_MAX_REACH, extend)
-		var gun := _gun_transform(center, local_target, reach, world_up, body_up)
+		var gun := _apply_strike(_gun_transform(center, local_target, reach, world_up, body_up), body_up)
 		_solve_arm(skeleton, "r", gun * _hand_in_gun("r", &"right"), &"right")
 		_solve_arm(skeleton, "l", gun * _hand_in_gun("l", &"support"), &"support")
 	else:
-		var gun_r := _gun_transform(shoulder_r, local_target, DUAL_REACH, world_up, body_up)
+		var gun_r := _apply_strike(_gun_transform(shoulder_r, local_target, DUAL_REACH, world_up, body_up), body_up)
 		var gun_l := _gun_transform(shoulder_l, local_target, DUAL_REACH, world_up, body_up)
 		_solve_arm(skeleton, "r", gun_r * _hand_in_gun("r", &"right"), &"right")
 		_solve_arm(skeleton, "l", gun_l * _hand_in_gun("l", &"left"), &"left")
@@ -111,6 +114,27 @@ func _gun_transform(origin: Vector3, aim_target: Vector3, reach: float, world_up
 		up = _flatten(Vector3.BACK, aim)
 	var basis := Basis.looking_at(aim, up.normalized())
 	return Transform3D(basis, origin + aim * (reach - RECOIL_DISTANCE * recoil))
+
+
+## Moves an aimed gun through the pistol-whip at [member strike]: up and back
+## over the shoulder (0 .. 0.4), a fast chop down and forward (0.4 .. 0.6),
+## then back to the aim.
+func _apply_strike(gun: Transform3D, body_up: Vector3) -> Transform3D:
+	if strike <= 0.0:
+		return gun
+	var raise := 0.0
+	var chop := 0.0
+	if strike < 0.4:
+		raise = smoothstep(0.0, 0.4, strike)
+	elif strike < 0.6:
+		chop = smoothstep(0.4, 0.6, strike)
+		raise = 1.0 - chop
+	else:
+		chop = 1.0 - smoothstep(0.6, 1.0, strike)
+	var forward := -gun.basis.z
+	var tilt := raise * deg_to_rad(85.0) - chop * deg_to_rad(50.0)
+	var offset := body_up * (0.2 * raise - 0.12 * chop) + forward * (0.2 * chop - 0.14 * raise)
+	return Transform3D(gun.basis.rotated(gun.basis.x.normalized(), tilt), gun.origin + offset)
 
 
 ## Two-bone IK: bends the elbow so the wrist reaches [param hand] (the hand

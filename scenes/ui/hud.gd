@@ -101,6 +101,7 @@ func _refresh_help() -> void:
 		"%s standing still: bullet time" % GameInput.prompt(&"shootdodge"),
 		"%s: Beretta / dual Berettas" % GameInput.prompt(&"next_weapon"),
 		"%s: take cover      %s: painkiller      %s: pause" % _prompts([&"take_cover", &"use_painkiller", &"pause"]),
+		"%s: pistol-whip      hold %s: keep firing" % _prompts([&"melee", &"fire"]),
 	])
 	if GameInput.layout == GameInput.Layout.KEYBOARD_MOUSE:
 		lines.append("F11: fullscreen")

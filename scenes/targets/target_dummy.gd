@@ -16,7 +16,7 @@ const BLOOD_COLOR := Color(0.7, 0.05, 0.05)
 @export var headshot_multiplier := 3.0
 @export var death_impulse := 6.0
 ## Respawn delay in game seconds.
-@export var respawn_delay := 6.0
+@export var respawn_delay := 3.0
 ## If greater than zero, the target slides back and forth along its local X axis.
 @export var patrol_distance := 0.0
 @export var patrol_speed := 1.5

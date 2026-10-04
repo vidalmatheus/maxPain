@@ -12,6 +12,8 @@ Vorbis, peaks normalized to -1 dBFS). Downloaded in October 2026.
 | `magazine_drop.ogg` | `impactMetal_medium_001` from [Impact Sounds](https://kenney.nl/assets/impact-sounds) | [Kenney](https://kenney.nl) |
 | `reload_magazine_out.ogg`, `reload_magazine_in.ogg`, `reload_slide.ogg` | `gunreload1.wav` from [Gun reload sounds](https://opengameart.org/content/gun-reload-sounds), split in three | SpringySpringo |
 | `dry_fire.ogg` | `metalClick` from [RPG Audio](https://kenney.nl/assets/rpg-audio) | [Kenney](https://kenney.nl) |
+| `melee_swing.ogg` | `cloth2` from [RPG Audio](https://kenney.nl/assets/rpg-audio) | [Kenney](https://kenney.nl) |
+| `melee_hit.ogg` | `impactPunch_heavy_001` from [Impact Sounds](https://kenney.nl/assets/impact-sounds) | [Kenney](https://kenney.nl) |
 | `weapon_switch.ogg` | `metalLatch` from [RPG Audio](https://kenney.nl/assets/rpg-audio) | [Kenney](https://kenney.nl) |
 | `bullet_time_enter.ogg`, `bullet_time_exit.ogg`, `bullet_time_loop.ogg` | [Time Slow](https://opengameart.org/content/time-slow): the opening hit, the same hit sped up, and the drone after it as a seamless loop | MidFag |
 

@@ -56,6 +56,10 @@ encode reload_slide 1 -i "$src/gunreload1.wav" \
 encode dry_fire 1 -i "$kenney_rpg/metalClick.ogg"
 encode weapon_switch 1 -i "$kenney_rpg/metalLatch.ogg"
 
+# Pistol-whip: the swing of the jacket sleeve and the butt hitting a face.
+encode melee_swing 1 -i "$kenney_rpg/cloth2.ogg"
+encode melee_hit 1 -i "$kenney_impact/impactPunch_heavy_001.ogg"
+
 # Bullet time: the "time freeze" hit for entering, the same hit sped up for
 # leaving, and the droning clock ticks after it as a seamless loop.
 encode bullet_time_enter 2 -i "$src/time_stop.mp3" \

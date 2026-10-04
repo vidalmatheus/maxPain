@@ -39,6 +39,9 @@ var _head: HeadLookModifier
 var _locomotion := Locomotion.IDLE
 var _dead := false
 var _reload_timer: SceneTreeTimer
+## Seconds into the current pistol-whip, and how long it lasts (0 = none).
+var _strike_time := 0.0
+var _strike_duration := 0.0
 ## Gun transforms per hand, in skeleton space, from the last final pose.
 var _gun_poses := {"r": Transform3D.IDENTITY, "l": Transform3D.IDENTITY}
 
@@ -73,6 +76,12 @@ func _process(delta: float) -> void:
 	var ik_weight := 0.0 if _reload_timer != null else 1.0
 	_arms.influence = move_toward(_arms.influence, ik_weight, IK_FADE_SPEED * delta)
 	_arms.recoil = move_toward(_arms.recoil, 0.0, RECOIL_RECOVERY * delta)
+	if _strike_duration > 0.0:
+		_strike_time += delta
+		_arms.strike = _strike_time / _strike_duration
+		if _arms.strike >= 1.0:
+			_arms.strike = 0.0
+			_strike_duration = 0.0
 
 
 ## World transform of the gun in a hand ("r" or "l"), following the hand
@@ -174,6 +183,13 @@ func set_clothes_tint(jacket: Color, pants: Color) -> void:
 func play_fire() -> void:
 	_arms.recoil = 1.0
 	_tree.set(&"parameters/fire/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+
+
+## Swings the gun in a pistol-whip lasting [param duration] seconds. The
+## blow lands halfway through.
+func play_melee(duration: float) -> void:
+	_strike_time = 0.0
+	_strike_duration = duration
 
 
 ## Plays the reload animation stretched to [param duration] seconds.

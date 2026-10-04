@@ -65,6 +65,10 @@ for Windows, Linux or macOS, see [Exporting builds](#exporting-builds-windows-li
   bounce on the floor, and a reload where the empty magazine drops out with
   physics. Bullets are **physical projectiles** (not hitscan),
   so you can watch them fly in slow motion. They knock props around.
+  Hold the trigger to keep firing at a steady cadence.
+- **Pistol-whip**: up close, Max raises the gun and brings the butt down on
+  the mobster in front of him, knocking him back and stopping him from
+  shooting for a moment.
 - **Sound effects**: positional gunshots, brass casings clinking on every
   bounce, magazines hitting the floor, a three-part reload (magazine out,
   magazine in, slide when it was empty), dry fire and weapon switching.
@@ -81,7 +85,8 @@ for Windows, Linux or macOS, see [Exporting builds](#exporting-builds-windows-li
   mobile build), fullscreen landscape on the first touch, and a "rotate your
   device" hint when held upright.
 - **Practice targets**: headshots deal triple damage; targets topple over
-  physically when killed and respawn. Some of them patrol.
+  physically when killed and get back up after 3 seconds. Some of them
+  patrol.
 
 ## Controls
 
@@ -94,9 +99,10 @@ switch automatically to the device you are using.
 |---|---|---|---|
 | Move | WASD / arrows | Left stick | Left stick |
 | Aim | Mouse | Right stick | Right stick |
-| Fire | Left click | RT | R2 |
-| Shootdodge (with a direction) | Right click or Shift | RB or LT | R1 or L2 |
-| Bullet time (toggle) | Q (or right click / Shift standing still) | LB or R3 (click) | L1 or R3 (click) |
+| Fire (hold for automatic fire) | Left click | RT | R2 |
+| Shootdodge (with a direction) | Right click or Shift | R3 (click) or LT | R3 (click) or L2 |
+| Bullet time (toggle) | Q (or right click / Shift standing still) | LB (or R3 standing still) | L1 (or R3 standing still) |
+| Pistol-whip | V, F or middle click | RB | R1 |
 | Jump | Space | A | Cross |
 | Reload | R | X | Square |
 | Beretta / dual Berettas | 1 / 2 / mouse wheel | Y / D-pad left/right | Triangle / D-pad left/right |
@@ -113,7 +119,8 @@ On phones and tablets the touch controls appear automatically: a floating
 joystick on the left half of the screen to move, drag anywhere on the right
 half to aim, and buttons for FIRE, DODGE (shootdodge with the joystick held in
 a direction), SLOW (bullet time), JUMP, RELOAD, GUN (one or two Berettas),
-COVER and PILL (painkiller), plus II at the top right to pause.
+COVER, PILL (painkiller) and WHIP (pistol-whip), plus II at the top right to
+pause. Holding FIRE keeps firing.
 The game goes fullscreen in landscape on the first touch; on iPhones, which
 don't allow locking the orientation from the browser, just rotate the phone.
 

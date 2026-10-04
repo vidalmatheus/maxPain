@@ -65,6 +65,30 @@ func _ready() -> void:
 	await _frames(30)
 	_check(target.is_dead, "target dies after enough hits")
 	_check(bullet_time.adrenaline > 50.0, "kill rewards adrenaline")
+	await get_tree().create_timer(3.2, false).timeout
+	_check(not target.is_dead and target.health == target.max_health, "practice targets get back up after 3 seconds")
+
+	# --- Pistol-whip -------------------------------------------------------------
+	var whip_spot := player.global_position
+	player.global_position = target.global_position + Vector3(0, 0.05, 1.2)
+	player.set(&"_yaw", 0.0)  # Facing -Z, at the target.
+	await _frames(10)
+	_check(player.melee(), "Max swings a pistol-whip")
+	_check(Player.MELEE_SWING_SOUND in sounds, "the swing whooshes")
+	await get_tree().create_timer(player.melee_time).timeout
+	_check(target.health == target.max_health - player.melee_damage, "the pistol-whip hurts the target in front")
+	_check(Player.MELEE_HIT_SOUND in sounds, "the blow lands with a thud")
+	_check(not player.melee() or player.get(&"_melee_cooldown") > 0.0, "pistol-whips need a moment between them")
+	await get_tree().create_timer(player.melee_cooldown).timeout
+	var health_before_miss := target.health
+	player.set(&"_yaw", PI)  # Facing away.
+	await _frames(5)
+	player.melee()
+	await get_tree().create_timer(player.melee_time).timeout
+	_check(target.health == health_before_miss, "a pistol-whip only hits what is in front of Max")
+	player.global_position = whip_spot
+	player.set(&"_yaw", 0.0)
+	await _frames(10)
 
 	# --- Bullet time toggle ---------------------------------------------------
 	bullet_time.adrenaline = bullet_time.max_adrenaline
@@ -112,24 +136,32 @@ func _ready() -> void:
 	_check(GameInput.detect_layout("Xbox Series X Controller") == GameInput.Layout.XBOX, "detects an Xbox controller")
 	_check(GameInput.detect_layout("Generic USB Gamepad") == GameInput.Layout.XBOX, "unknown pads use Xbox prompts")
 
-	# Holding the trigger fires once (semi-automatic), even though an analog
-	# trigger keeps sending motion events while held.
+	# Holding the trigger keeps firing at a steady cadence, not once per
+	# motion event an analog trigger keeps sending while held.
 	player.pistol.reload()
 	await _frames(120)
 	var ammo_start := player.pistol.ammo_in_magazine
 	for value in [0.4, 0.8, 1.0, 0.97, 1.0, 0.98, 1.0, 0.97, 1.0, 0.99]:
 		_send_axis(JOY_AXIS_TRIGGER_RIGHT, value)
-		await _frames(6)
-	_check(player.pistol.ammo_in_magazine == ammo_start - 1, "holding the trigger fires a single shot")
+		await get_tree().create_timer(0.1).timeout
+	var held_shots := ammo_start - player.pistol.ammo_in_magazine
+	_check(held_shots >= 4 and held_shots <= 7, "holding the trigger keeps firing at a steady cadence (%d shots in 1 s)" % held_shots)
 	_check(GameInput.is_using_gamepad(), "gamepad input switches the active layout")
 	_check(GameInput.prompt(&"fire") == "RT", "prompts follow the gamepad layout")
 	_send_axis(JOY_AXIS_TRIGGER_RIGHT, 0.0)
-	await _frames(6)
+	var released_ammo := player.pistol.ammo_in_magazine
+	await get_tree().create_timer(0.5).timeout
+	_check(player.pistol.ammo_in_magazine == released_ammo, "letting go of the trigger stops firing")
 	_send_axis(JOY_AXIS_TRIGGER_RIGHT, 1.0)
-	await _frames(6)
+	await _frames(2)
 	_send_axis(JOY_AXIS_TRIGGER_RIGHT, 0.0)
 	await _frames(2)
-	_check(player.pistol.ammo_in_magazine == ammo_start - 2, "pulling the trigger again fires again")
+	_check(player.pistol.ammo_in_magazine == released_ammo - 1, "a quick pull fires a single shot")
+
+	# R1 pistol-whips; R3 is the shootdodge button (bullet time standing still).
+	_check(_joy_button_in(&"melee", JOY_BUTTON_RIGHT_SHOULDER), "R1 / RB pistol-whips")
+	_check(_joy_button_in(&"shootdodge", JOY_BUTTON_RIGHT_STICK) and not _joy_button_in(&"bullet_time", JOY_BUTTON_RIGHT_STICK),
+			"R3 shootdodges (and toggles bullet time standing still)")
 
 	# Right stick aims.
 	var yaw_before: float = player.get(&"_yaw")
@@ -421,6 +453,13 @@ func _send_axis(axis: JoyAxis, value: float) -> void:
 
 
 ## Angle in degrees between where the right pistol points and the crosshair.
+func _joy_button_in(action: StringName, button: JoyButton) -> bool:
+	for event in InputMap.action_get_events(action):
+		if event is InputEventJoypadButton and (event as InputEventJoypadButton).button_index == button:
+			return true
+	return false
+
+
 func _gun_aim_error(player: Player) -> float:
 	var gun := player.pistol.right_gun
 	var to_aim := player.aim_point - gun.muzzle.global_position
