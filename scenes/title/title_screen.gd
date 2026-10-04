@@ -3,7 +3,7 @@ extends Node3D
 ## Title screen: "MAX PAIN" over the snowy street at night, with a slow
 ## camera move, Max standing guard with his Berettas, and the main menu:
 ## start a survival game, pick the difficulty, practice on the training
-## range or read the controls. A melancholic trio plays in the background.
+## range or read the controls. Cold, melancholic strings play in the background.
 
 const TRAINING_SCENE := "res://scenes/main.tscn"
 const BERETTA := preload("res://scenes/weapons/beretta.tscn")
@@ -60,9 +60,11 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif _difficulty_button.has_focus():
 		if event.is_action_pressed(&"ui_left"):
 			_cycle_difficulty(-1)
+			MenuStyle.play_move()
 			get_viewport().set_input_as_handled()
 		elif event.is_action_pressed(&"ui_right"):
 			_cycle_difficulty(1)
+			MenuStyle.play_move()
 			get_viewport().set_input_as_handled()
 
 
@@ -135,7 +137,7 @@ func _build_ui() -> void:
 	controls.pressed.connect(_show_controls.bind(true))
 
 	var credits := MenuStyle.label("A Max Payne fan tribute. Not affiliated with Remedy or Rockstar.\n"
-			+ "Music: \"Sad Trio\" and \"Hitman\" by Kevin MacLeod (incompetech.com), CC BY 4.0.", 13, Color(1, 1, 1, 0.45))
+			+ "Music: \"When Snow Become Ashes\" by Alexandr Zhelanov, \"Hitman\" by Kevin MacLeod (incompetech.com), CC BY 4.0.", 13, Color(1, 1, 1, 0.45))
 	credits.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	credits.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
 	credits.offset_left = 24.0

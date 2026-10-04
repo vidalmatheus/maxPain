@@ -4,7 +4,7 @@
 # - assets/music/web/*.ogg: a ~100 s mono 22 kHz loop of each, which the
 #   browser plays as a Web Audio sample (glitch-free, about 9 MB decoded).
 #
-# Usage: tools/prepare_music.sh <dir with sad_trio.mp3 and hitman.mp3>
+# Usage: tools/prepare_music.sh <dir with when_snow_become_ashes.ogg and hitman.mp3>
 set -euo pipefail
 
 src="${1:?usage: $0 <source dir>}"
@@ -23,5 +23,5 @@ convert() {
 	echo "$2"
 }
 
-convert sad_trio.mp3 title_sad_trio -18
+convert when_snow_become_ashes.ogg title_snow_ashes -18
 convert hitman.mp3 gameplay_hitman -20

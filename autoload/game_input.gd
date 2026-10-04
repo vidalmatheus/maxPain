@@ -82,6 +82,13 @@ const JOY_AXES := {
 
 const LOOK_ACTIONS: Array[StringName] = [&"look_left", &"look_right", &"look_up", &"look_down"]
 
+## Godot's built-in menu actions have no controller buttons for confirming
+## and going back; add them (Cross / A confirms, Circle / B goes back).
+const UI_JOY_BUTTONS := {
+	&"ui_accept": JOY_BUTTON_A,
+	&"ui_cancel": JOY_BUTTON_B,
+}
+
 ## Prompt text per action, indexed by Layout.
 const PROMPTS := {
 	&"move": ["WASD", "Left stick", "Left stick", "Left side"],
@@ -115,6 +122,11 @@ func _ready() -> void:
 		InputMap.add_action(action, LOOK_DEADZONE if action in LOOK_ACTIONS else DEADZONE)
 		for event: InputEvent in defaults[action]:
 			InputMap.action_add_event(action, event)
+	for action: StringName in UI_JOY_BUTTONS:
+		var joy_button := InputEventJoypadButton.new()
+		joy_button.button_index = UI_JOY_BUTTONS[action]
+		if not InputMap.action_has_event(action, joy_button):
+			InputMap.action_add_event(action, joy_button)
 	Input.joy_connection_changed.connect(_on_joy_connection_changed)
 	# Phones and tablets (native or in the browser) start with on-screen controls.
 	if OS.has_feature("mobile") or OS.has_feature("web_android") or OS.has_feature("web_ios"):

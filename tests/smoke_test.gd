@@ -338,6 +338,25 @@ func _test_title_screen() -> void:
 	_check(Game.difficulty != before, "the title screen changes the difficulty")
 	title.call(&"_cycle_difficulty", -1)
 	_check(Game.difficulty == before, "and changes it back")
+	# Cross / A on a controller presses the focused menu button.
+	var focused := get_viewport().gui_get_focus_owner() as Button
+	var pressed := [false]
+	if focused:
+		focused.pressed.connect(func() -> void: pressed[0] = true)
+		# Don't actually start a game.
+		for connection in focused.pressed.get_connections():
+			if connection.callable.get_method() == &"start_survival":
+				focused.pressed.disconnect(connection.callable)
+	var button := InputEventJoypadButton.new()
+	button.button_index = JOY_BUTTON_A
+	button.pressed = true
+	Input.parse_input_event(button)
+	await _frames(2)
+	button = button.duplicate()
+	button.pressed = false
+	Input.parse_input_event(button)
+	await _frames(2)
+	_check(pressed[0], "a controller's Cross / A button presses menu buttons")
 	title.queue_free()
 	await _frames(2)
 

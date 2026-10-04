@@ -305,9 +305,10 @@ Physics layers: `1 world`, `2 player`, `3 enemies`, `4 props`.
   (Ben Jaszczak et al.), SpringySpringo and MidFag on
   [OpenGameArt](https://opengameart.org), all CC0; see
   [assets/sounds/README.md](assets/sounds/README.md).
-- **Music:** "Sad Trio" and "Hitman" by Kevin MacLeod
-  ([incompetech.com](https://incompetech.com)), licensed under
-  [Creative Commons: By Attribution 4.0](https://creativecommons.org/licenses/by/4.0/).
+- **Music:** "When Snow Become Ashes" by
+  [Alexandr Zhelanov](https://opengameart.org/content/when-snow-become-ashes)
+  and "Hitman" by Kevin MacLeod ([incompetech.com](https://incompetech.com)),
+  licensed under [Creative Commons: By Attribution 4.0](https://creativecommons.org/licenses/by/4.0/).
 - **Street, buildings and cars:** Car Kit, City Kit (Roads) and City Kit
   (Commercial) by [Kenney](https://kenney.nl), CC0; see
   [assets/environment/README.md](assets/environment/README.md).

@@ -1,6 +1,6 @@
 extends Node
-## Background music with crossfades: a sad trio on the title screen and a
-## tense track during the game (both by Kevin MacLeod, CC BY 4.0; see
+## Background music with crossfades: cold, melancholic strings on the title
+## screen and a tense track during the game (both CC BY 4.0; see
 ## assets/music/README.md). The music ducks a little in bullet time.
 ##
 ## On desktop the whole tracks stream from disk. Browsers get ~100 s mono
@@ -9,7 +9,7 @@ extends Node
 ## takes long, and a whole song decoded as a sample would take tens of
 ## megabytes on a phone.
 
-const TITLE := "title_sad_trio.ogg"
+const TITLE := "title_snow_ashes.ogg"
 const GAMEPLAY := "gameplay_hitman.ogg"
 const VOLUME_DB := -8.0
 const SILENT_DB := -40.0

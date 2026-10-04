@@ -113,6 +113,19 @@ func stop_all() -> void:
 		player.queue_free()
 
 
+## Plays a menu sound: not positional, not slowed by bullet time, and
+## audible while the game is paused.
+func play_ui(stream: AudioStream, volume_db := 0.0, pitch := 1.0) -> void:
+	var player := AudioStreamPlayer.new()
+	player.stream = stream
+	player.volume_db = volume_db
+	player.pitch_scale = pitch
+	player.process_mode = Node.PROCESS_MODE_ALWAYS
+	player.finished.connect(player.queue_free)
+	add_child(player)
+	player.play()
+
+
 func is_bullet_time_loop_playing() -> bool:
 	return _loop.playing
 
