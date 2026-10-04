@@ -204,6 +204,7 @@ func _refresh_controls() -> void:
 		"Shootdodge: %s + direction      Bullet time: %s" % [p.call(&"shootdodge"), p.call(&"bullet_time")],
 		"Take cover: %s      Painkiller: %s      Reload: %s" % [p.call(&"take_cover"), p.call(&"use_painkiller"), p.call(&"reload")],
 		"Jump: %s      Switch weapon: %s      Pause: %s" % [p.call(&"jump"), p.call(&"next_weapon"), p.call(&"pause")],
+		"Pistol-whip: %s      Hold fire to keep shooting" % p.call(&"melee"),
 		"",
 		"Survive the waves. Every wave brings two more mobsters.",
 		"Dead mobsters drop ammo, and sometimes adrenaline or painkillers.",
