@@ -98,7 +98,7 @@ switch automatically to the device you are using.
 | Reload | R | X | Square |
 | Beretta / dual Berettas | 1 / 2 / mouse wheel | Y / D-pad left/right | Triangle / D-pad left/right |
 | Take cover / leave cover | C or Ctrl | B | Circle |
-| Painkiller | H or E | D-pad up | D-pad up |
+| Painkiller | Tab (or H / E) | D-pad up | D-pad up |
 | Pause | Esc or P | Menu | Options |
 | Help | F1 | View | Create |
 | Fullscreen | F11 | | |

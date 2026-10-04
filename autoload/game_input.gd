@@ -42,7 +42,7 @@ const KEYS := {
 	&"weapon_beretta": [KEY_1],
 	&"weapon_dual_berettas": [KEY_2],
 	&"take_cover": [KEY_C, KEY_CTRL],
-	&"use_painkiller": [KEY_H, KEY_E],
+	&"use_painkiller": [KEY_TAB, KEY_H, KEY_E],
 	&"pause": [KEY_P, KEY_ESCAPE],
 }
 
@@ -101,7 +101,7 @@ const PROMPTS := {
 	&"toggle_help": ["F1", "View", "Create", "?"],
 	&"pause": ["Esc / P", "Menu", "Options", "II"],
 	&"take_cover": ["C", "B", "Circle", "COVER"],
-	&"use_painkiller": ["H", "D-pad up", "D-pad up", "PILL"],
+	&"use_painkiller": ["Tab", "D-pad up", "D-pad up", "PILL"],
 	&"next_weapon": ["1 / 2 / Wheel", "Y", "Triangle", "GUN"],
 }
 
