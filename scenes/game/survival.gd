@@ -21,6 +21,14 @@ const ENEMIES_ADDED_PER_WAVE := 2
 const SPAWN_INTERVAL := 1.3
 ## Spawn points closer than this to Max are skipped.
 const MIN_SPAWN_DISTANCE := 20.0
+## Painkiller bottles also turn up at random spots on the street, every
+## PAINKILLER_INTERVAL seconds give or take PAINKILLER_JITTER, a few at a time.
+const PAINKILLER_INTERVAL := 32.0
+const PAINKILLER_JITTER := 8.0
+const MAX_MAP_PAINKILLERS := 3
+const MAP_PAINKILLER_LIFETIME := 60.0
+## They show up at least this far from Max, so it takes a run to get them.
+const MIN_PAINKILLER_DISTANCE := 8.0
 
 var wave := 0
 var kills := 0
@@ -31,6 +39,7 @@ var is_over := false
 var _to_spawn := 0
 var _alive := 0
 var _spawn_timer := 0.0
+var _painkiller_timer := PAINKILLER_INTERVAL
 
 @onready var level: StreetLevel = $Street/Level
 @onready var player: Player = $Player
@@ -46,6 +55,11 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if is_over:
 		return
+	if wave > 0:
+		_painkiller_timer -= delta
+		if _painkiller_timer <= 0.0:
+			_painkiller_timer = PAINKILLER_INTERVAL + randf_range(-PAINKILLER_JITTER, PAINKILLER_JITTER)
+			spawn_map_painkiller()
 	if break_left > 0.0:
 		break_left = maxf(break_left - BulletTime.to_real_delta(delta), 0.0)
 		if break_left == 0.0:
@@ -65,6 +79,25 @@ func remaining() -> int:
 
 func wave_size(number: int) -> int:
 	return Game.setting("first_wave") + ENEMIES_ADDED_PER_WAVE * (number - 1)
+
+
+## Drops a bottle of painkillers at a random reachable spot on the street.
+## Returns it, or null when there are enough on the map already.
+func spawn_map_painkiller() -> Pickup:
+	var on_map := get_tree().get_nodes_in_group(&"map_painkillers").size()
+	if on_map >= MAX_MAP_PAINKILLERS:
+		return null
+	var map := get_world_3d().navigation_map
+	var spot := Vector3.ZERO
+	for attempt in 12:
+		spot = NavigationServer3D.map_get_random_point(map, 1, true)
+		var inside := absf(spot.x) < StreetLevel.HALF_SIZE - 3.0 and absf(spot.z) < StreetLevel.HALF_SIZE - 3.0
+		if inside and spot.distance_to(player.global_position) >= MIN_PAINKILLER_DISTANCE:
+			break
+	var pickup := Pickup.spawn(self, Pickup.Kind.PAINKILLER, spot + Vector3(0, 0.05, 0))
+	pickup.lifetime = MAP_PAINKILLER_LIFETIME
+	pickup.add_to_group(&"map_painkillers")
+	return pickup
 
 
 func _start_wave() -> void:

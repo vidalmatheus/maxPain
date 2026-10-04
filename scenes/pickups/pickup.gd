@@ -18,6 +18,8 @@ const GLOW := {
 }
 
 var kind := Kind.AMMO
+## Seconds on the ground before it disappears.
+var lifetime := LIFETIME
 
 var _age := 0.0
 var _visual: Node3D
@@ -58,9 +60,9 @@ func _process(delta: float) -> void:
 	_age += delta
 	_visual.rotation.y += delta * 2.0
 	_visual.position.y = 0.3 + sin(_age * 3.0) * 0.05
-	if _age > LIFETIME - BLINK_TIME:
+	if _age > lifetime - BLINK_TIME:
 		visible = fmod(_age, 0.3) < 0.18
-	if _age > LIFETIME:
+	if _age > lifetime:
 		queue_free()
 
 

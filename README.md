@@ -25,7 +25,8 @@ for Windows, Linux or macOS, see [Exporting builds](#exporting-builds-windows-li
 - **Survival mode**: waves of mobsters come in from the ends of the streets.
   Each wave brings two more than the last, and the next one starts 15 seconds
   after the last mobster of a wave dies. Dead mobsters drop ammo, and
-  sometimes adrenaline (bullet time) or painkillers. The best wave per
+  sometimes adrenaline (bullet time) or painkillers; painkiller bottles also
+  turn up at random spots on the street. The best wave per
   difficulty is saved.
 - **Mobsters that shoot back**: they run along a navigation mesh until they
   see Max, then fire in bursts with a reaction delay; hurt ones run for cover

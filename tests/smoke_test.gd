@@ -315,6 +315,18 @@ func _test_survival() -> void:
 	_check(player.health > hurt_health and player.painkillers == bottles - 1,
 			"painkillers heal (%.0f -> %.0f)" % [hurt_health, player.health])
 
+	# Painkillers turn up at random on the street, a few at a time.
+	var bottle := game.spawn_map_painkiller()
+	_check(bottle != null and bottle.kind == Pickup.Kind.PAINKILLER
+			and bottle.global_position.distance_to(player.global_position) >= Survival.MIN_PAINKILLER_DISTANCE,
+			"painkillers turn up at random spots, away from Max")
+	for i in Survival.MAX_MAP_PAINKILLERS:
+		game.spawn_map_painkiller()
+	_check(get_tree().get_nodes_in_group(&"map_painkillers").size() == Survival.MAX_MAP_PAINKILLERS,
+			"no more than %d painkillers on the map at once" % Survival.MAX_MAP_PAINKILLERS)
+	for pickup in get_tree().get_nodes_in_group(&"map_painkillers"):
+		pickup.queue_free()
+
 	# --- Cover -----------------------------------------------------------------------
 	# The concrete barrier at (-2.5, 12) is waist high; stand east of it, facing west.
 	player.global_position = Vector3(-1.4, 0.05, 12.0)
