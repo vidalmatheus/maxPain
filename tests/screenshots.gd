@@ -91,6 +91,8 @@ func _ready() -> void:
 	add_child(game)
 	game.break_left = 0.1
 	var player := game.player
+	# Max must live through the whole sequence.
+	player.hurt.connect(func(_damage: float) -> void: player.health = player.max_health * 0.7)
 	player.set(&"_yaw", PI)  # Down the main street.
 	await _game_seconds(4.0)
 	for enemy: Enemy in get_tree().get_nodes_in_group(&"enemies"):

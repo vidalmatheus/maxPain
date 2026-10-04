@@ -40,9 +40,14 @@ for Windows, Linux or macOS, see [Exporting builds](#exporting-builds-windows-li
   barriers and dumpsters.
 - **Health and painkillers**: the HUD silhouette fills with red as Max gets
   hurt; painkillers heal over a moment, like in the original.
-- **The street**: a snowy intersection at night with parked cars, police cars
-  with flashing lights, street lamps, dumpsters and concrete barriers, built
-  from Kenney's city and car kits.
+- **The street**: a snowy New York intersection at night: wet asphalt with
+  painted lines and zebra crosswalks, concrete sidewalks with granite curbs,
+  brick tenements with lit windows, shops with neon signs and awnings, fire
+  escapes and water towers, working traffic lights, hydrants, steaming
+  manholes and a Con Ed stack, plowed snow along the curbs and on the cars,
+  parked cars, police cars with flashing lights, street lamps, dumpsters and
+  concrete barriers. Built in code from Kenney's car and road kits and
+  ambientCG textures.
 - **Title screen** with music, difficulty selection, a training range (the
   practice targets), the controls and a sound on/off option (also in the
   pause menu, remembered between visits); a pause menu and a game over screen.
@@ -269,11 +274,13 @@ assets/weapons/        Weapon models (see their READMEs)
 assets/fonts/          HUD font and its license
 assets/sounds/         Sound effects (CC0, see its README)
 assets/music/          Music (CC BY 4.0, see its README)
-assets/environment/    Street, buildings and cars (CC0, see its README)
+assets/environment/    Cars, lamps and street props (CC0, see its README)
+assets/textures/street/  Asphalt, sidewalk, facade and snow textures (CC0, see its README)
 tools/export.sh        Exports builds into build/<platform>/
 tools/build_character.gd  Rigs the character and extracts its animations
 tools/prepare_sounds.sh   Cuts the sound effects out of their source packs
 tools/prepare_music.sh    Converts the music (and its short loops for the web)
+tools/prepare_textures.py Builds the street textures (lit windows, sidewalk joints)
 .github/               CI: Pages deploy, PR previews, releases
 ```
 
@@ -319,7 +326,10 @@ Physics layers: `1 world`, `2 player`, `3 enemies`, `4 props`.
   [Alexandr Zhelanov](https://opengameart.org/content/when-snow-become-ashes)
   and "Hitman" by Kevin MacLeod ([incompetech.com](https://incompetech.com)),
   licensed under [Creative Commons: By Attribution 4.0](https://creativecommons.org/licenses/by/4.0/).
-- **Street, buildings and cars:** Car Kit, City Kit (Roads) and City Kit
-  (Commercial) by [Kenney](https://kenney.nl), CC0; see
+- **Cars and street props:** Car Kit and City Kit (Roads) by
+  [Kenney](https://kenney.nl), CC0; see
   [assets/environment/README.md](assets/environment/README.md).
+- **Street textures:** asphalt, concrete, brick facades and snow from
+  [ambientCG](https://ambientcg.com), CC0; see
+  [assets/textures/street/README.md](assets/textures/street/README.md).
 - **Enemies** reuse the Max model with recolored clothes.

@@ -359,6 +359,16 @@ func _test_survival() -> void:
 	for pickup in get_tree().get_nodes_in_group(&"map_painkillers"):
 		pickup.queue_free()
 
+	# --- Curbs -----------------------------------------------------------------------
+	player.global_position = Vector3(4.0, 0.05, 12.5)
+	player.set(&"_yaw", -PI * 0.5)  # Facing +X, towards the sidewalk.
+	await _frames(5)
+	Input.action_press(&"move_forward")
+	await get_tree().create_timer(1.0).timeout
+	Input.action_release(&"move_forward")
+	_check(player.global_position.x > 6.8 and player.global_position.y > StreetLevel.CURB_HEIGHT * 0.7,
+			"Max walks up the curb onto the sidewalk (%.2f, %.2f)" % [player.global_position.x, player.global_position.y])
+
 	# --- Cover -----------------------------------------------------------------------
 	# The concrete barrier at (-2.5, 12) is waist high; stand east of it, facing west.
 	player.global_position = Vector3(-1.4, 0.05, 12.0)
