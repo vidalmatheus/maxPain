@@ -116,25 +116,34 @@ func _gun_transform(origin: Vector3, aim_target: Vector3, reach: float, world_up
 	return Transform3D(basis, origin + aim * (reach - RECOIL_DISTANCE * recoil))
 
 
-## Moves an aimed gun through the pistol-whip at [member strike]: up and back
-## over the shoulder (0 .. 0.4), a fast chop down and forward (0.4 .. 0.6),
-## then back to the aim.
+## Where a pistol-whip at [param t] (0..1) is across the body: wound up out
+## to the right (1), swept across to the left (-1), then back to the aim (0).
+## The blow lands as the gun crosses the middle, about halfway through.
+static func strike_side(t: float) -> float:
+	if t <= 0.0 or t >= 1.0:
+		return 0.0
+	if t < 0.35:
+		return smoothstep(0.0, 0.35, t)
+	if t < 0.6:
+		return lerpf(1.0, -1.0, smoothstep(0.35, 0.6, t))
+	return smoothstep(0.6, 1.0, t) - 1.0
+
+
+## Moves an aimed gun through the pistol-whip at [member strike]: a wide
+## backhand from the right to the left, laid on its side with the butt
+## leading.
 func _apply_strike(gun: Transform3D, body_up: Vector3) -> Transform3D:
-	if strike <= 0.0:
+	var side := strike_side(strike)
+	if is_zero_approx(side):
 		return gun
-	var raise := 0.0
-	var chop := 0.0
-	if strike < 0.4:
-		raise = smoothstep(0.0, 0.4, strike)
-	elif strike < 0.6:
-		chop = smoothstep(0.4, 0.6, strike)
-		raise = 1.0 - chop
-	else:
-		chop = 1.0 - smoothstep(0.6, 1.0, strike)
 	var forward := -gun.basis.z
-	var tilt := raise * deg_to_rad(85.0) - chop * deg_to_rad(50.0)
-	var offset := body_up * (0.2 * raise - 0.12 * chop) + forward * (0.2 * chop - 0.14 * raise)
-	return Transform3D(gun.basis.rotated(gun.basis.x.normalized(), tilt), gun.origin + offset)
+	var right := gun.basis.x.normalized()
+	# Out to the right and pulled back while winding up, across and in front
+	# while sweeping; the muzzle turns with the swing.
+	var offset := right * side * 0.5 + body_up * 0.08 * absf(side) \
+			- forward * 0.12 * maxf(side, 0.0) + forward * 0.08 * maxf(-side, 0.0)
+	var basis := gun.basis.rotated(forward, -deg_to_rad(60.0) * absf(side)).rotated(body_up, -side * deg_to_rad(70.0))
+	return Transform3D(basis, gun.origin + offset)
 
 
 ## Two-bone IK: bends the elbow so the wrist reaches [param hand] (the hand

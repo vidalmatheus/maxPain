@@ -7,19 +7,24 @@ extends Node
 const MAIN_SCENE := preload("res://scenes/main.tscn")
 const SURVIVAL_SCENE := preload("res://scenes/game/survival.tscn")
 const TITLE_SCENE := preload("res://scenes/title/title_screen.tscn")
+const TARGET_SCENE := preload("res://scenes/targets/target_dummy.tscn")
 
 var _failures := 0
 
 
 func _ready() -> void:
-	var main := MAIN_SCENE.instantiate()
+	# A quiet training range with one practice target, which has a clear
+	# line of fire from the spawn point.
+	var main: TrainingRange = MAIN_SCENE.instantiate()
+	main.spawn_mobsters = false
+	var target: TargetDummy = TARGET_SCENE.instantiate()
+	target.position = Vector3(4, 0, -12)
+	main.add_child(target)
 	add_child(main)
 	await _frames(30)
 
 	var bullet_time := BulletTime
 	var player: Player = main.get_node("Player")
-	# Target3 has a clear line of fire from the spawn point.
-	var target: TargetDummy = main.get_node("Targets/Target3")
 	var sounds: Array[AudioStream] = []
 	SoundFx.played.connect(func(stream: AudioStream) -> void: sounds.append(stream))
 
@@ -285,6 +290,7 @@ func _ready() -> void:
 	main.queue_free()
 	await _frames(2)
 
+	await _test_training()
 	await _test_survival()
 	await _test_title_screen()
 
@@ -294,6 +300,34 @@ func _ready() -> void:
 	await get_tree().create_timer(Music.FADE_TIME + 0.3).timeout
 	print("\n%s" % ("ALL CHECKS PASSED" if _failures == 0 else "%d CHECK(S) FAILED" % _failures))
 	get_tree().quit(1 if _failures > 0 else 0)
+
+
+func _test_training() -> void:
+	var range: TrainingRange = MAIN_SCENE.instantiate()
+	add_child(range)
+	await _frames(5)
+	var spots := range.spawns.get_child_count()
+	var mobsters := get_tree().get_nodes_in_group(&"enemies")
+	_check(mobsters.size() == spots, "mobsters stand at the training range's %d spots" % spots)
+	var first := mobsters[0] as Enemy
+	var spot := first.global_position
+	first.take_hit(1000.0, first.global_position + Vector3(0, 1.2, 0), Vector3.FORWARD)
+	await _frames(2)
+	_check(get_tree().get_nodes_in_group(&"enemies").size() == spots - 1, "a training mobster dies")
+	await get_tree().create_timer(TrainingRange.RESPAWN_TIME + 0.3, false).timeout
+	var back := false
+	for enemy: Enemy in get_tree().get_nodes_in_group(&"enemies"):
+		back = back or enemy.global_position.distance_to(spot) < 2.0
+	_check(get_tree().get_nodes_in_group(&"enemies").size() == spots and back,
+			"it comes back at its spot after %d seconds" % TrainingRange.RESPAWN_TIME)
+	# The mobsters shoot back at the chosen difficulty.
+	var waited := 0
+	while range.player.health >= range.player.max_health and waited < 1200:
+		await _frames(1)
+		waited += 1
+	_check(range.player.health < range.player.max_health, "training mobsters shoot Max")
+	range.queue_free()
+	await _frames(2)
 
 
 func _test_survival() -> void:

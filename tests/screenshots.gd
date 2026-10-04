@@ -26,8 +26,10 @@ func _ready() -> void:
 	var main := MAIN_SCENE.instantiate()
 	add_child(main)
 	_player = main.get_node("Player")
+	# The mobsters shoot back; Max must live through the whole sequence.
+	_player.hurt.connect(func(_damage: float) -> void: _player.health = _player.max_health * 0.7)
 	await _physics_frames(30)
-	await _shot("idle", "Standing in the test arena.")
+	await _shot("idle", "The training range: mobsters at the far end shoot back.")
 
 	# Fire a few shots in bullet time; the last bullets are still in flight.
 	BulletTime.toggle()

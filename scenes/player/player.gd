@@ -72,7 +72,7 @@ const MELEE_HIT_SOUND := preload("res://assets/sounds/melee_hit.ogg")
 ## How far in front of Max a pistol-whip reaches.
 @export var melee_range := 1.9
 ## Length of the swing; the blow lands halfway through.
-@export var melee_time := 0.42
+@export var melee_time := 0.5
 @export var melee_cooldown := 0.65
 ## Speed (m/s) the blow knocks a mobster back with.
 @export var melee_push := 4.0

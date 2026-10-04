@@ -25,6 +25,8 @@ const MAX_AIM_PITCH := deg_to_rad(60.0)
 const MAX_TWIST := deg_to_rad(100.0)
 ## How fast the arm IK fades out for a reload and back in, per second.
 const IK_FADE_SPEED := 8.0
+## How far the chest turns with a pistol-whip, each way.
+const STRIKE_TWIST := deg_to_rad(50.0)
 ## How fast the recoil of a shot settles, per second.
 const RECOIL_RECOVERY := 7.0
 
@@ -135,7 +137,9 @@ func aim_at(target: Vector3) -> void:
 	var local := skeleton.global_basis.inverse() * (target - skeleton.global_position)
 	if local.length_squared() < 0.01:
 		return
-	_twist.yaw = clampf(atan2(local.x, local.z), -MAX_TWIST, MAX_TWIST)
+	# The chest turns with a pistol-whip: right to wind up, left to swing.
+	var swing := -ArmIKModifier.strike_side(_arms.strike) * STRIKE_TWIST
+	_twist.yaw = clampf(atan2(local.x, local.z) + swing, -MAX_TWIST, MAX_TWIST)
 	_arms.target = target
 	_head.target = target
 	var pitch := atan2(local.y - 1.4, Vector2(local.x, local.z).length())

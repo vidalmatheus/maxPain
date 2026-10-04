@@ -48,8 +48,8 @@ for Windows, Linux or macOS, see [Exporting builds](#exporting-builds-windows-li
   parked cars, police cars with flashing lights, street lamps, dumpsters and
   concrete barriers. Built in code from Kenney's car and road kits and
   ambientCG textures.
-- **Title screen** with music, difficulty selection, a training range (the
-  practice targets), the controls and a sound on/off option (also in the
+- **Title screen** with music, difficulty selection, a training range (mobsters
+  that shoot back and keep coming back), the controls and a sound on/off option (also in the
   pause menu, remembered between visits); a pause menu and a game over screen.
 - **Animated Max Payne** model with Max Payne 3 style upper/lower body
   blending: the legs run in the movement direction (forwards or backwards)
@@ -89,9 +89,9 @@ for Windows, Linux or macOS, see [Exporting builds](#exporting-builds-windows-li
 - **Phones and tablets**: on-screen controls in the browser (or a native
   mobile build), fullscreen landscape on the first touch, and a "rotate your
   device" hint when held upright.
-- **Practice targets**: headshots deal triple damage; targets topple over
-  physically when killed and get back up after 3 seconds. Some of them
-  patrol.
+- **Training range**: mobsters at the far end shoot back at the difficulty
+  picked on the title screen, and each one comes back at its spot 5 seconds
+  after it dies. If Max dies, the range starts over.
 
 ## Controls
 
@@ -262,10 +262,11 @@ scenes/
   levels/              The street at night (built in code), snow, police lights
   enemies/             Mobster AI
   pickups/             Ammo, adrenaline and painkillers dropped by enemies
-  main.tscn            Training range with practice targets
+  main.tscn            Training range
+  training/            Training range mobsters that keep coming back
   player/              Player controller, camera and animated character model
   weapons/             Pistol and bullet
-  targets/             Practice target dummy
+  targets/             Practice target dummy (used by the tests)
   props/               Physics crate
   fx/                  Impact particles
   ui/                  HUD, crosshair, bullet-time shader, menus

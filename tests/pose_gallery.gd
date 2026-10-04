@@ -40,7 +40,8 @@ func _ready() -> void:
 			_only = arg.trim_prefix("--only=")
 	DirAccess.make_dir_recursive_absolute(_output_dir)
 
-	var main := MAIN_SCENE.instantiate()
+	var main: TrainingRange = MAIN_SCENE.instantiate()
+	main.spawn_mobsters = false
 	add_child(main)
 	_player = main.get_node("Player")
 	_spawn = _player.global_position + Vector3(0, 0.05, 0)
@@ -84,13 +85,13 @@ func _stand_shots(label: String) -> void:
 	await _capture(label + "_hands", [Vector3(0.45, 0.68, -0.45), Vector3(-0.45, 0.68, -0.45), Vector3(0.05, 1.0, -0.3)], 1.42)
 
 
-## The pistol-whip frozen at a few points of the swing: raised, chopping
-## down, the blow, and the way back.
+## The pistol-whip frozen at a few points of the swing: wound up to the
+## right, sweeping, the blow, and swept through to the left.
 func _whip_shots(label: String) -> void:
 	_reset_player()
 	await _game_seconds(0.4)
 	var arms: ArmIKModifier = _player.model.get(&"_arms")
-	for phase: float in [0.3, 0.45, 0.5, 0.75]:
+	for phase: float in [0.3, 0.42, 0.48, 0.6]:
 		arms.strike = phase
 		await _physics_frames(3)
 		await _capture("whip_%s_%d" % [label, roundi(phase * 100)], [Vector3(2.4, 1.3, -0.8)])

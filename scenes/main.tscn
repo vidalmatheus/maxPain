@@ -4,7 +4,7 @@
 
 [ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="1_player"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="2_hud"]
-[ext_resource type="PackedScene" path="res://scenes/targets/target_dummy.tscn" id="3_target"]
+[ext_resource type="Script" path="res://scenes/training/training_range.gd" id="3_training"]
 [ext_resource type="PackedScene" path="res://scenes/props/crate.tscn" id="4_crate"]
 [ext_resource type="Texture2D" path="res://assets/textures/grid.svg" id="5_grid"]
 
@@ -44,6 +44,7 @@ uv1_triplanar = true
 uv1_world_triplanar = true
 
 [node name="Main" type="Node3D"]
+script = ExtResource("3_training")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_night")
@@ -86,43 +87,43 @@ use_collision = true
 size = Vector3(1, 6, 40)
 material = SubResource("Material_wall")
 
-[node name="PillarA" type="CSGBox3D" parent="Arena"]
+[node name="PillarA" type="CSGBox3D" parent="Arena" groups=["cover"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 3, -6)
 use_collision = true
 size = Vector3(1, 6, 1)
 material = SubResource("Material_concrete")
 
-[node name="PillarB" type="CSGBox3D" parent="Arena"]
+[node name="PillarB" type="CSGBox3D" parent="Arena" groups=["cover"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 3, -6)
 use_collision = true
 size = Vector3(1, 6, 1)
 material = SubResource("Material_concrete")
 
-[node name="PillarC" type="CSGBox3D" parent="Arena"]
+[node name="PillarC" type="CSGBox3D" parent="Arena" groups=["cover"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 3, 4)
 use_collision = true
 size = Vector3(1, 6, 1)
 material = SubResource("Material_concrete")
 
-[node name="PillarD" type="CSGBox3D" parent="Arena"]
+[node name="PillarD" type="CSGBox3D" parent="Arena" groups=["cover"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 3, 4)
 use_collision = true
 size = Vector3(1, 6, 1)
 material = SubResource("Material_concrete")
 
-[node name="CoverCenter" type="CSGBox3D" parent="Arena"]
+[node name="CoverCenter" type="CSGBox3D" parent="Arena" groups=["cover"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, -4)
 use_collision = true
 size = Vector3(4, 1.2, 0.4)
 material = SubResource("Material_concrete")
 
-[node name="CoverWest" type="CSGBox3D" parent="Arena"]
+[node name="CoverWest" type="CSGBox3D" parent="Arena" groups=["cover"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11, 0.6, -2)
 use_collision = true
 size = Vector3(0.4, 1.2, 4)
 material = SubResource("Material_concrete")
 
-[node name="CoverEast" type="CSGBox3D" parent="Arena"]
+[node name="CoverEast" type="CSGBox3D" parent="Arena" groups=["cover"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 0.6, -9)
 use_collision = true
 size = Vector3(3, 1.2, 0.4)
@@ -193,30 +194,28 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 0.45, -10)
 [node name="Crate7" parent="Props" instance=ExtResource("4_crate")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14.2, 1.35, -10)
 
-[node name="Targets" type="Node3D" parent="."]
+[node name="Mobsters" type="Node3D" parent="."]
 
-[node name="Target1" parent="Targets" instance=ExtResource("3_target")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, -12)
+[node name="Spot1" type="Marker3D" parent="Mobsters"]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -4, 0, -12)
 
-[node name="Target2" parent="Targets" instance=ExtResource("3_target")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -15)
-patrol_distance = 3.0
+[node name="Spot2" type="Marker3D" parent="Mobsters"]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, -15)
 
-[node name="Target3" parent="Targets" instance=ExtResource("3_target")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, -12)
+[node name="Spot3" type="Marker3D" parent="Mobsters"]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 4, 0, -12)
 
-[node name="Target4" parent="Targets" instance=ExtResource("3_target")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 0, -17)
+[node name="Spot4" type="Marker3D" parent="Mobsters"]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -9, 0, -17)
 
-[node name="Target5" parent="Targets" instance=ExtResource("3_target")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, -16)
-patrol_distance = 2.0
+[node name="Spot5" type="Marker3D" parent="Mobsters"]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 9, 0, -16)
 
-[node name="Target6" parent="Targets" instance=ExtResource("3_target")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 0, -4)
+[node name="Spot6" type="Marker3D" parent="Mobsters"]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -14, 0, -4)
 
-[node name="Target7" parent="Targets" instance=ExtResource("3_target")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 0, -13)
+[node name="Spot7" type="Marker3D" parent="Mobsters"]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 15, 0, -13)
 
 [node name="Player" parent="." instance=ExtResource("1_player")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 10)
