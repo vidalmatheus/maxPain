@@ -1,7 +1,8 @@
 class_name PauseMenu
 extends CanvasLayer
 ## Pause menu (Esc / P, Start / Options, or the II button on touch screens):
-## resume, restart the current scene or quit to the title screen.
+## resume, restart the current scene, turn the sound on or off, or quit to
+## the title screen.
 
 ## Set by game modes that have their own end screen, to stop pausing then.
 var enabled := true
@@ -31,7 +32,7 @@ func _ready() -> void:
 	restart.pressed.connect(_restart)
 	var quit := MenuStyle.button("Quit to title")
 	quit.pressed.connect(Game.go_to_title)
-	for item in [_resume_button, restart, quit]:
+	for item in [_resume_button, restart, MenuStyle.sound_button(), quit]:
 		column.add_child(item)
 	_panel.add_child(column)
 	add_child(_panel)

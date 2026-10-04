@@ -1,6 +1,7 @@
 extends Node
-## Game-wide state: the chosen difficulty, scene changes between the title
-## screen and the survival game, and the best waves reached (saved to disk).
+## Game-wide state: the chosen difficulty, whether sound is on, scene changes
+## between the title screen and the survival game, and the best waves reached
+## (saved to disk).
 
 ## A short message for the HUD (e.g. what was just picked up).
 signal message(text: String)
@@ -58,6 +59,8 @@ const SETTINGS := {
 }
 
 var difficulty := Difficulty.HARD_BOILED
+## All sound (effects and music) off.
+var muted := false
 
 var _best_waves := {}
 
@@ -68,6 +71,8 @@ func _ready() -> void:
 	if config.load(SAVE_PATH) == OK:
 		difficulty = config.get_value("game", "difficulty", difficulty)
 		_best_waves = config.get_value("game", "best_waves", {})
+		muted = config.get_value("game", "muted", false)
+	AudioServer.set_bus_mute(0, muted)
 
 
 ## A tuning value for the current difficulty.
@@ -93,6 +98,13 @@ func record_wave(wave: int) -> bool:
 	return true
 
 
+## Turns all sound off or back on, and remembers it.
+func set_muted(value: bool) -> void:
+	muted = value
+	AudioServer.set_bus_mute(0, muted)
+	_save()
+
+
 func set_difficulty(level: Difficulty) -> void:
 	difficulty = level
 	_save()
@@ -116,4 +128,5 @@ func _save() -> void:
 	var config := ConfigFile.new()
 	config.set_value("game", "difficulty", difficulty)
 	config.set_value("game", "best_waves", _best_waves)
+	config.set_value("game", "muted", muted)
 	config.save(SAVE_PATH)

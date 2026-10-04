@@ -34,6 +34,17 @@ func _ready() -> void:
 	Input.action_release(&"move_forward")
 	_check(player.global_position.z < start.z - 1.0, "player walks forward (-Z)")
 
+	# --- Jumping: high enough to get onto a car (1.3 m) ----------------------------
+	var ground_y := player.global_position.y
+	var peak := ground_y
+	Input.action_press(&"jump")
+	await _frames(2)
+	Input.action_release(&"jump")
+	for i in 70:
+		await _frames(1)
+		peak = maxf(peak, player.global_position.y)
+	_check(peak - ground_y > 1.4, "Max jumps high enough to get onto a car (%.2f m)" % (peak - ground_y))
+
 	# --- Shooting: bullets travel and damage targets ------------------------
 	player.pistol.spread_degrees = 0.0  # Deterministic shots.
 	var chest := target.global_position + Vector3(0.0, 1.0, 0.0)
@@ -338,6 +349,13 @@ func _test_title_screen() -> void:
 	_check(Game.difficulty != before, "the title screen changes the difficulty")
 	title.call(&"_cycle_difficulty", -1)
 	_check(Game.difficulty == before, "and changes it back")
+	title.call(&"_show_controls", true)
+	title.call(&"_show_controls", false)
+	_check(get_viewport().gui_get_focus_owner() is Button, "closing the controls puts the focus back on the menu")
+	var was_muted := Game.muted
+	Game.set_muted(not was_muted)
+	_check(AudioServer.is_bus_mute(0) != was_muted, "the sound option mutes and unmutes the game")
+	Game.set_muted(was_muted)
 	# Cross / A on a controller presses the focused menu button.
 	var focused := get_viewport().gui_get_focus_owner() as Button
 	var pressed := [false]

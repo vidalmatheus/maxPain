@@ -59,6 +59,18 @@ static func button(text: String, size := 40) -> Button:
 	return result
 
 
+## A button that turns all sound on and off, showing the current state.
+static func sound_button(size := 40) -> Button:
+	var result := button("", size)
+	var refresh := func() -> void:
+		result.text = "Sound: %s" % ("Off" if Game.muted else "On")
+	refresh.call()
+	result.pressed.connect(func() -> void:
+		Game.set_muted(not Game.muted)
+		refresh.call())
+	return result
+
+
 ## The click of moving between options (also for changing a setting).
 static func play_move() -> void:
 	SoundFx.play_ui(MOVE_SOUND, -12.0, 1.35)

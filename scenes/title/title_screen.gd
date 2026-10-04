@@ -18,6 +18,7 @@ var _menu: VBoxContainer
 var _difficulty_button: Button
 var _difficulty_info: Label
 var _controls_panel: Control
+var _controls_button: Button
 var _controls_label: Label
 
 @onready var camera: Camera3D = $Camera3D
@@ -133,8 +134,11 @@ func _build_ui() -> void:
 	_menu.add_child(_difficulty_info)
 	var training := _menu_button("Training range")
 	training.pressed.connect(_start_training)
-	var controls := _menu_button("Controls")
-	controls.pressed.connect(_show_controls.bind(true))
+	_controls_button = _menu_button("Controls")
+	_controls_button.pressed.connect(_show_controls.bind(true))
+	var sound := MenuStyle.sound_button(44)
+	sound.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_menu.add_child(sound)
 
 	var credits := MenuStyle.label("A Max Payne fan tribute. Not affiliated with Remedy or Rockstar.\n"
 			+ "Music: \"When Snow Become Ashes\" by Alexandr Zhelanov, \"Hitman\" by Kevin MacLeod (incompetech.com), CC BY 4.0.", 13, Color(1, 1, 1, 0.45))
@@ -190,7 +194,7 @@ func _show_controls(show: bool) -> void:
 	if show:
 		(_controls_panel.find_children("*", "Button", true, false)[0] as Button).grab_focus()
 	else:
-		(_menu.get_child(2) as Button).grab_focus()
+		_controls_button.grab_focus()
 
 
 func _refresh_controls() -> void:

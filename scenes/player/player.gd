@@ -43,8 +43,9 @@ const CROUCH_HEIGHT := 1.1
 @export var backpedal_multiplier := 0.75
 @export var acceleration := 40.0
 @export var air_acceleration := 6.0
-@export var jump_velocity := 5.0
-@export var gravity := 14.0
+## High enough (about 1.7 m) to jump onto cars, barriers and dumpsters.
+@export var jump_velocity := 7.8
+@export var gravity := 18.0
 
 @export_group("Shootdodge")
 @export var dive_speed := 7.5

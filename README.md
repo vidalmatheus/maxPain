@@ -35,14 +35,16 @@ for Windows, Linux or macOS, see [Exporting builds](#exporting-builds-windows-li
   and *Dead on Arrival* (enemy health, damage, accuracy, reaction time, wave
   size and drops).
 - **Cover**: stick to walls, cars and concrete barriers; crouch behind low
-  cover, pop up to shoot and slide along it.
+  cover, pop up to shoot and slide along it. Max can also jump onto cars,
+  barriers and dumpsters.
 - **Health and painkillers**: the HUD silhouette fills with red as Max gets
   hurt; painkillers heal over a moment, like in the original.
 - **The street**: a snowy intersection at night with parked cars, police cars
   with flashing lights, street lamps, dumpsters and concrete barriers, built
   from Kenney's city and car kits.
 - **Title screen** with music, difficulty selection, a training range (the
-  practice targets) and the controls; a pause menu and a game over screen.
+  practice targets), the controls and a sound on/off option (also in the
+  pause menu, remembered between visits); a pause menu and a game over screen.
 - **Animated Max Payne** model with Max Payne 3 style upper/lower body
   blending: the legs run in the movement direction (forwards or backwards)
   while the spine twists so the upper body always faces the aim. Arm IK keeps
