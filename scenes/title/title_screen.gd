@@ -17,6 +17,7 @@ const DOLLY_TIME := 30.0
 var _time := 0.0
 var _menu: VBoxContainer
 var _difficulty_button: Button
+var _training_button: Button
 var _difficulty_info: Label
 var _controls_panel: Control
 var _controls_button: Button
@@ -35,6 +36,7 @@ func _ready() -> void:
 	_build_ui()
 	GameInput.layout_changed.connect(func(_layout: GameInput.Layout) -> void: _refresh_controls())
 	_refresh_difficulty()
+	_refresh_training()
 	_refresh_controls()
 	(_menu.get_child(0) as Button).grab_focus()
 
@@ -69,6 +71,13 @@ func _unhandled_input(event: InputEvent) -> void:
 			_cycle_difficulty(1)
 			MenuStyle.play_move()
 			get_viewport().set_input_as_handled()
+	elif _training_button.has_focus() and (event.is_action_pressed(&"ui_left") or event.is_action_pressed(&"ui_right")):
+		# Left / right: practice targets, or how many mobsters.
+		var step := -1 if event.is_action_pressed(&"ui_left") else 1
+		Game.training_mobsters = posmod(Game.training_mobsters + step, TrainingRange.MAX_MOBSTERS + 1)
+		_refresh_training()
+		MenuStyle.play_move()
+		get_viewport().set_input_as_handled()
 
 
 ## Max stands in the intersection with his back to the camera, dual
@@ -113,7 +122,7 @@ func _build_ui() -> void:
 	column.add_theme_constant_override(&"separation", 0)
 	ui.add_child(column)
 
-	var title := MenuStyle.label("MAX PAIN", 132)
+	var title := MenuStyle.label("MAX PAIN", 112)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	title.add_theme_constant_override(&"line_spacing", -30)
 	column.add_child(title)
@@ -121,7 +130,7 @@ func _build_ui() -> void:
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	column.add_child(subtitle)
 	var gap := Control.new()
-	gap.custom_minimum_size.y = 28.0
+	gap.custom_minimum_size.y = 10.0
 	column.add_child(gap)
 
 	_menu = VBoxContainer.new()
@@ -136,11 +145,11 @@ func _build_ui() -> void:
 	_difficulty_info = MenuStyle.label("", 18, MenuStyle.DIM)
 	_difficulty_info.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_menu.add_child(_difficulty_info)
-	var training := _menu_button("Training range")
-	training.pressed.connect(_start_training)
+	_training_button = _menu_button("")
+	_training_button.pressed.connect(_start_training)
 	_controls_button = _menu_button("Controls")
 	_controls_button.pressed.connect(_show_controls.bind(true))
-	var sound := MenuStyle.sound_button(44)
+	var sound := MenuStyle.sound_button(40)
 	sound.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_menu.add_child(sound)
 	# Messages such as "connect a controller for player 2".
@@ -181,7 +190,7 @@ func _show_notice(text: String) -> void:
 
 
 func _menu_button(text: String) -> Button:
-	var item := MenuStyle.button(text, 44)
+	var item := MenuStyle.button(text, 40)
 	item.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_menu.add_child(item)
 	return item
@@ -222,6 +231,12 @@ func _refresh_controls() -> void:
 		"Survive the waves. Every wave brings two more mobsters.",
 		"Dead mobsters drop ammo, and sometimes adrenaline or painkillers.",
 	]))
+
+
+func _refresh_training() -> void:
+	var count := Game.training_mobsters
+	var what := "targets" if count == 0 else "%d mobster%s" % [count, "" if count == 1 else "s"]
+	_training_button.text = "Training: < %s >" % what
 
 
 func _start_training() -> void:

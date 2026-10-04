@@ -304,6 +304,7 @@ func _ready() -> void:
 
 
 func _test_training() -> void:
+	Game.training_mobsters = TrainingRange.MAX_MOBSTERS
 	var range: TrainingRange = MAIN_SCENE.instantiate()
 	add_child(range)
 	await _frames(5)
@@ -329,6 +330,25 @@ func _test_training() -> void:
 	_check(range.player.health < range.player.max_health, "training mobsters shoot Max")
 	range.queue_free()
 	await _frames(2)
+	# Or practice targets instead, picked on the title screen.
+	Game.training_mobsters = 0
+	range = MAIN_SCENE.instantiate()
+	add_child(range)
+	await _frames(5)
+	var targets := range.find_children("*", "", true, false).filter(func(node: Node) -> bool: return node is TargetDummy)
+	_check(targets.size() == spots and range.find_children("*", "Enemy", true, false).is_empty(),
+			"the training range can have practice targets instead")
+	range.queue_free()
+	await _frames(2)
+	# Or just a few mobsters.
+	Game.training_mobsters = 2
+	range = MAIN_SCENE.instantiate()
+	add_child(range)
+	await _frames(5)
+	_check(get_tree().get_nodes_in_group(&"enemies").size() == 2, "the number of training mobsters can be picked")
+	range.queue_free()
+	await _frames(2)
+	Game.training_mobsters = 3
 
 
 func _test_survival() -> void:

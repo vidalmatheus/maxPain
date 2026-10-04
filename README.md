@@ -48,8 +48,8 @@ for Windows, Linux or macOS, see [Exporting builds](#exporting-builds-windows-li
   parked cars, police cars with flashing lights, street lamps, dumpsters and
   concrete barriers. Built in code from Kenney's car and road kits and
   ambientCG textures.
-- **Title screen** with music, difficulty selection, a training range (mobsters
-  that shoot back and keep coming back), the controls and a sound on/off option (also in the
+- **Title screen** with music, difficulty selection, a training range (red
+  practice targets, or mobsters who shoot back), the controls and a sound on/off option (also in the
   pause menu, remembered between visits); a pause menu and a game over screen.
 - **Animated Max Payne** model with Max Payne 3 style upper/lower body
   blending: the legs run in the movement direction (forwards or backwards)
@@ -95,9 +95,10 @@ for Windows, Linux or macOS, see [Exporting builds](#exporting-builds-windows-li
   after the closest player, a fallen player gets back up when the next wave
   starts, and the game ends when both are down. Bullet time and adrenaline
   are shared.
-- **Training range**: mobsters at the far end shoot back at the difficulty
-  picked on the title screen, and each one comes back at its spot 5 seconds
-  after it dies. If Max dies, the range starts over.
+- **Training range**: pick on the title screen between the red practice
+  targets and 1 to 7 mobsters who shoot back at the chosen difficulty. Each
+  one comes back at its spot after it dies (targets after 3 seconds,
+  mobsters after 5). If Max dies, the range starts over.
 
 ## Controls
 

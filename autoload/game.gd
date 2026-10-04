@@ -66,6 +66,9 @@ var muted := false
 ## and mouse only) and player two's.
 var coop := false
 var coop_joypads: Array[int] = []
+## What stands at the far end of the training range: this many mobsters
+## who shoot back, or the red practice targets when it is 0.
+var training_mobsters := 3
 
 var _best_waves := {}
 
