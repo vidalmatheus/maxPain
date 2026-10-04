@@ -251,9 +251,9 @@ func _build_road_markings() -> void:
 func _add_road_line(batch: Batch, material: Material, street: int, across: float, along: float,
 		width: float, length: float) -> void:
 	var size := Vector3(width, 0.01, length)
-	var position := Vector3(across, 0.012, along)
+	var position := Vector3(across, 0.02, along)
 	if street == 1:
-		position = Vector3(along, 0.012, across)
+		position = Vector3(along, 0.02, across)
 		size = Vector3(size.z, size.y, size.x)
 	batch.add_box(material, size, Transform3D(Basis.IDENTITY, position))
 
@@ -337,13 +337,17 @@ func _build_building(block_index: int, lot_index: int) -> void:
 	var batch := Batch.new()
 	var stone := _plain(Color(0.2, 0.19, 0.18), 0.8)
 	var snow := _snow_material()
+	# Neighbors' ledges stick out by different amounts, so where they meet
+	# their faces are never in the same plane (which would flicker).
+	var ledge := 0.04 * lot_index
+	var grow := Vector3(2.0 * ledge, 0.0, 2.0 * ledge)
 	# Cornice with snow on it, closing the roof.
-	batch.add_box(stone, Vector3(size.x + 0.5, 0.6, size.z + 0.5), Transform3D(Basis.IDENTITY, Vector3(0, height + 0.3, 0)))
-	batch.add_box(snow, Vector3(size.x + 0.4, 0.06, size.z + 0.4), Transform3D(Basis.IDENTITY, Vector3(0, height + 0.63, 0)))
+	batch.add_box(stone, Vector3(size.x + 0.5, 0.6, size.z + 0.5) + grow, Transform3D(Basis.IDENTITY, Vector3(0, height + 0.3, 0)))
+	batch.add_box(snow, Vector3(size.x + 0.4, 0.06, size.z + 0.4) + grow, Transform3D(Basis.IDENTITY, Vector3(0, height + 0.63, 0)))
 	# Ground floor: dark granite, with shops on the street sides.
-	batch.add_box(_plain(Color(0.09, 0.085, 0.08), 0.6), Vector3(size.x + 0.24, SHOP_HEIGHT, size.z + 0.24),
-			Transform3D(Basis.IDENTITY, Vector3(0, SHOP_HEIGHT * 0.5, 0)))
-	batch.add_box(stone, Vector3(size.x + 0.4, 0.3, size.z + 0.4), Transform3D(Basis.IDENTITY, Vector3(0, SHOP_HEIGHT, 0)))
+	batch.add_box(_plain(Color(0.09, 0.085, 0.08), 0.6), Vector3(size.x + 0.24, SHOP_HEIGHT, size.z + 0.24) + grow,
+			Transform3D(Basis.IDENTITY, Vector3(0, SHOP_HEIGHT * 0.5 - ledge * 0.1, 0)))
+	batch.add_box(stone, Vector3(size.x + 0.4, 0.3, size.z + 0.4) + grow, Transform3D(Basis.IDENTITY, Vector3(0, SHOP_HEIGHT + ledge * 0.1, 0)))
 	# The street sides, as (outward normal, length along it).
 	var street_sides: Array = []
 	if is_equal_approx(lot.position.x, ROAD_WIDTH * 0.5 + SIDEWALK):
@@ -353,7 +357,7 @@ func _build_building(block_index: int, lot_index: int) -> void:
 	for side: Array in street_sides:
 		var normal: Vector3 = side[0]
 		var depth := absf(normal.dot(size)) * 0.5
-		_add_shops(batch, body, normal, depth, side[1])
+		_add_shops(batch, body, normal, depth + ledge, side[1])
 		if lot_index in FIRE_ESCAPE_LOTS and side == street_sides[0]:
 			_add_fire_escape(batch, normal, depth, height)
 	if _random.randf() < 0.45:
@@ -378,7 +382,8 @@ func _add_shops(batch: Batch, building: Node3D, normal: Vector3, depth: float, l
 		var basis := Basis(right, Vector3.UP, normal)
 		var glass_size := Vector3(width - 1.4, 2.5, 0.04)
 		batch.add_box(frame, glass_size + Vector3(0.2, 0.2, 0.02), Transform3D(basis, front + Vector3(0, 1.95, 0)))
-		var glass := Transform3D(basis.scaled(Vector3(glass_size.x, glass_size.y, 1.0)), front + normal * 0.03 + Vector3(0, 1.95, 0))
+		# In front of the frame (whose face is 3 cm out), not in its plane.
+		var glass := Transform3D(basis * Basis.from_scale(Vector3(glass_size.x, glass_size.y, 1.0)), front + normal * 0.05 + Vector3(0, 1.95, 0))
 		if _random.randf() < 0.7:
 			# Lit inside: bright under the ceiling lights, darker below.
 			batch.add_mesh(_shop_window(_random.randi() % SHOP_LIGHTS), _unit_quad(), glass)

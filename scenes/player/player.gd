@@ -106,6 +106,14 @@ const MELEE_HIT_SOUND := preload("res://assets/sounds/melee_hit.ogg")
 ## How fast the visual model turns and leans (per second of game time).
 @export var body_turn_speed := 14.0
 
+## Holding the aim button (L2 / LT) zooms in over the shoulder and slows
+## the aim down for precise shots.
+@export var aim_fov := 48.0
+@export var aim_spring_length := 1.6
+@export var aim_look_multiplier := 0.55
+## How fast the zoom goes in and out, per real second.
+@export var aim_zoom_speed := 7.0
+
 @export_group("Gamepad aiming")
 ## Turn speeds at full stick deflection, in radians per real second.
 @export var gamepad_yaw_speed := 3.2
@@ -148,6 +156,10 @@ var _cover_low := false
 var _cover_popup := 0.0
 ## Time left before a shot queued while popping up from cover.
 var _pending_fire := -1.0
+## 0 normally, 1 zoomed in to aim.
+var _aim_zoom := 0.0
+var _default_fov := 70.0
+var _default_spring_length := 2.4
 ## Whether the trigger has been held since a shot, and the time to the next
 ## automatic one.
 var _fire_held := false
@@ -182,6 +194,8 @@ func _ready() -> void:
 	pistol.mode_changed.connect(model.set_dual)
 	model.hands_posed.connect(_hold_pistols)
 	_camera_rest_height = camera_yaw.position.y
+	_default_fov = camera.fov
+	_default_spring_length = spring_arm.spring_length
 	# Browsers only allow pointer lock after a user gesture, so on the web
 	# the first click captures the mouse instead (see _unhandled_input).
 	if not OS.has_feature("web"):
@@ -205,14 +219,17 @@ func _unhandled_input(event: InputEvent) -> void:
 	var just_captured := Engine.get_process_frames() - _capture_click_frame <= 1
 	if event is InputEventMouseMotion and captured and not just_captured:
 		var motion := event as InputEventMouseMotion
-		_add_look(-motion.relative.x * mouse_sensitivity, -motion.relative.y * mouse_sensitivity)
+		var sensitivity := mouse_sensitivity * _look_multiplier()
+		_add_look(-motion.relative.x * sensitivity, -motion.relative.y * sensitivity)
 	elif event.is_action_pressed(&"release_mouse"):
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 
 func _process(delta: float) -> void:
 	_process_actions()
-	_process_gamepad_look(BulletTime.to_real_delta(delta))
+	var real_delta := BulletTime.to_real_delta(delta)
+	_process_aim_zoom(real_delta)
+	_process_gamepad_look(real_delta)
 
 	camera_yaw.rotation.y = _yaw
 	camera_pitch.rotation.x = _pitch
@@ -297,6 +314,25 @@ func _process_actions() -> void:
 		pistol.set_dual(not pistol.dual)
 
 
+## Zooms in while the aim button is held. Real time, so it stays snappy in
+## bullet time.
+func _process_aim_zoom(real_delta: float) -> void:
+	var aiming := Input.is_action_pressed(&"aim_zoom") and state != State.DEAD
+	_aim_zoom = move_toward(_aim_zoom, 1.0 if aiming else 0.0, aim_zoom_speed * real_delta)
+	var t := smoothstep(0.0, 1.0, _aim_zoom)
+	camera.fov = lerpf(_default_fov, aim_fov, t)
+	spring_arm.spring_length = lerpf(_default_spring_length, aim_spring_length, t)
+
+
+## Whether Max is zoomed in to aim.
+func is_aiming() -> bool:
+	return _aim_zoom > 0.5
+
+
+func _look_multiplier() -> float:
+	return lerpf(1.0, aim_look_multiplier, _aim_zoom)
+
+
 ## Right-stick aiming. Uses real time so it is not slowed by bullet time.
 func _process_gamepad_look(real_delta: float) -> void:
 	var look := Input.get_vector(&"look_left", &"look_right", &"look_up", &"look_down")
@@ -309,7 +345,7 @@ func _process_gamepad_look(real_delta: float) -> void:
 	_look_hold_time = _look_hold_time + real_delta if magnitude > 0.95 else 0.0
 	var boost := gamepad_turn_boost if _look_hold_time > gamepad_turn_boost_delay else 1.0
 	var friction := aim_friction if _aiming_at_enemy else 1.0
-	var scale := boost * friction * real_delta
+	var scale := boost * friction * real_delta * _look_multiplier()
 	_add_look(-curved.x * gamepad_yaw_speed * scale, -curved.y * gamepad_pitch_speed * scale)
 
 

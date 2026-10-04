@@ -4,6 +4,11 @@ extends CanvasLayer
 ## bottom right, a dot crosshair, plus the bullet-time screen effect, touch
 ## controls on phones and tablets, and a controls help panel.
 
+## Gamepad button names (PlayStation, then Xbox), by Godot's button index.
+const JOY_BUTTON_NAMES := ["Cross / A", "Circle / B", "Square / X", "Triangle / Y", "Create / View",
+		"PS / Guide", "Options / Menu", "L3", "R3", "L1 / LB", "R1 / RB", "D-pad up", "D-pad down",
+		"D-pad left", "D-pad right", "Mic / Share", "Paddle 1", "Paddle 2", "Paddle 3", "Paddle 4", "Touchpad"]
+
 const TOAST_DURATION := 3.0
 ## Health below which the screen edges pulse red.
 const LOW_HEALTH := 0.3
@@ -35,6 +40,7 @@ func _ready() -> void:
 	_on_adrenaline_changed(BulletTime.adrenaline, BulletTime.max_adrenaline)
 	GameInput.layout_changed.connect(_on_layout_changed)
 	GameInput.controller_connection_changed.connect(_on_controller_connection_changed)
+	GameInput.joy_button_pressed.connect(func(_button: int) -> void: _refresh_help())
 	_refresh_help()
 	toast_label.visible = false
 	Game.message.connect(_show_toast)
@@ -101,10 +107,15 @@ func _refresh_help() -> void:
 		"%s standing still: bullet time" % GameInput.prompt(&"shootdodge"),
 		"%s: Beretta / dual Berettas" % GameInput.prompt(&"next_weapon"),
 		"%s: take cover      %s: painkiller      %s: pause" % _prompts([&"take_cover", &"use_painkiller", &"pause"]),
-		"%s: pistol-whip      hold %s: keep firing" % _prompts([&"melee", &"fire"]),
+		"%s: pistol-whip      hold %s: keep firing      %s: aim" % _prompts([&"melee", &"fire", &"aim_zoom"]),
 	])
 	if GameInput.layout == GameInput.Layout.KEYBOARD_MOUSE:
 		lines.append("F11: fullscreen")
+	elif GameInput.is_using_gamepad():
+		# Helps to tell which button a controller really sends.
+		var button := GameInput.last_joy_button
+		var button_name: String = JOY_BUTTON_NAMES[button] if button >= 0 and button < JOY_BUTTON_NAMES.size() else "?"
+		lines.append("%s   ·   last button: %d (%s)" % [Input.get_joy_name(GameInput.active_joypad), button, button_name])
 	help_label.text = "\n".join(lines)
 
 

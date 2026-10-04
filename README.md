@@ -105,8 +105,9 @@ switch automatically to the device you are using.
 | Move | WASD / arrows | Left stick | Left stick |
 | Aim | Mouse | Right stick | Right stick |
 | Fire (hold for automatic fire) | Left click | RT | R2 |
-| Shootdodge (with a direction) | Right click or Shift | R3 (click) or LT | R3 (click) or L2 |
-| Bullet time (toggle) | Q (or right click / Shift standing still) | LB (or R3 standing still) | L1 (or R3 standing still) |
+| Aim (zoom in, hold) | Z | LT | L2 |
+| Shootdodge (with a direction) | Right click or Shift | R3 (click) | R3 (click) |
+| Bullet time (toggle) | Q (or right click / Shift standing still) | R3 standing still (or LB) | R3 standing still (or L1) |
 | Pistol-whip | V, F or middle click | RB | R1 |
 | Jump | Space | A | Cross |
 | Reload | R | X | Square |

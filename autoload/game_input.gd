@@ -14,6 +14,9 @@ extends Node
 ## Emitted when the player switches between keyboard/mouse and a gamepad, or
 ## between gamepads of a different family. HUD prompts listen to this.
 signal layout_changed(layout: Layout)
+## Emitted for every gamepad button press, with Godot's button index (for
+## the controller info in the help overlay).
+signal joy_button_pressed(button: int)
 ## Emitted when a gamepad is plugged in or removed.
 signal controller_connection_changed(controller_name: String, connected: bool)
 
@@ -52,6 +55,7 @@ const KEYS := {
 	&"use_painkiller": [KEY_TAB, KEY_H, KEY_E],
 	&"pause": [KEY_P, KEY_ESCAPE],
 	&"melee": [KEY_V, KEY_F],
+	&"aim_zoom": [KEY_Z],
 }
 
 const MOUSE_BUTTONS := {
@@ -89,7 +93,7 @@ const JOY_AXES := {
 	&"look_up": [[JOY_AXIS_RIGHT_Y, -1.0]],
 	&"look_down": [[JOY_AXIS_RIGHT_Y, 1.0]],
 	&"fire": [[JOY_AXIS_TRIGGER_RIGHT, 1.0]],
-	&"shootdodge": [[JOY_AXIS_TRIGGER_LEFT, 1.0]],
+	&"aim_zoom": [[JOY_AXIS_TRIGGER_LEFT, 1.0]],
 }
 
 const LOOK_ACTIONS: Array[StringName] = [&"look_left", &"look_right", &"look_up", &"look_down"]
@@ -109,7 +113,8 @@ const PROMPTS := {
 	&"jump": ["Space", "A", "Cross", "JUMP"],
 	&"reload": ["R", "X", "Square", "RELOAD"],
 	&"bullet_time": ["Q", "LB", "L1", "SLOW"],
-	&"shootdodge": ["Right click / Shift", "R3 / LT", "R3 / L2", "DODGE"],
+	&"shootdodge": ["Right click / Shift", "R3", "R3", "DODGE"],
+	&"aim_zoom": ["Z", "LT", "L2", "-"],
 	&"melee": ["V / Middle click", "RB", "R1", "WHIP"],
 	&"toggle_help": ["F1", "View", "Create", "?"],
 	&"pause": ["Esc / P", "Menu", "Options", "II"],
@@ -122,6 +127,8 @@ const PROMPTS := {
 var layout := Layout.KEYBOARD_MOUSE
 ## Device id of the last gamepad used, or -1 when none has been used yet.
 var active_joypad := -1
+## The last gamepad button pressed (Godot's index), or -1.
+var last_joy_button := -1
 
 var _last_touch_msec := -TOUCH_MOUSE_GRACE_MSEC
 
@@ -148,6 +155,9 @@ func _ready() -> void:
 
 
 func _input(event: InputEvent) -> void:
+	if event is InputEventJoypadButton and (event as InputEventJoypadButton).pressed:
+		last_joy_button = (event as InputEventJoypadButton).button_index
+		joy_button_pressed.emit(last_joy_button)
 	# Track the device the player is actually using to show matching prompts.
 	if event is InputEventScreenTouch or event is InputEventScreenDrag:
 		_last_touch_msec = Time.get_ticks_msec()

@@ -158,6 +158,16 @@ func _ready() -> void:
 	await _frames(2)
 	_check(player.pistol.ammo_in_magazine == released_ammo - 1, "a quick pull fires a single shot")
 
+	# L2 zooms in to aim.
+	var fov_before := player.camera.fov
+	_send_axis(JOY_AXIS_TRIGGER_LEFT, 1.0)
+	await get_tree().create_timer(0.4).timeout
+	_check(player.is_aiming() and player.camera.fov < fov_before - 10.0, "holding L2 / LT zooms in to aim (fov %.0f)" % player.camera.fov)
+	_send_axis(JOY_AXIS_TRIGGER_LEFT, 0.0)
+	await get_tree().create_timer(0.4).timeout
+	_check(not player.is_aiming() and is_equal_approx(player.camera.fov, fov_before), "letting go of L2 zooms back out")
+	_check(not _joy_axis_in(&"shootdodge", JOY_AXIS_TRIGGER_LEFT), "L2 no longer shootdodges")
+
 	# R1 pistol-whips; R3 is the shootdodge button (bullet time standing still).
 	_check(_joy_button_in(&"melee", JOY_BUTTON_RIGHT_SHOULDER), "R1 / RB pistol-whips")
 	_check(_joy_button_in(&"shootdodge", JOY_BUTTON_RIGHT_STICK) and not _joy_button_in(&"bullet_time", JOY_BUTTON_RIGHT_STICK),
@@ -466,6 +476,13 @@ func _send_axis(axis: JoyAxis, value: float) -> void:
 func _joy_button_in(action: StringName, button: JoyButton) -> bool:
 	for event in InputMap.action_get_events(action):
 		if event is InputEventJoypadButton and (event as InputEventJoypadButton).button_index == button:
+			return true
+	return false
+
+
+func _joy_axis_in(action: StringName, axis: JoyAxis) -> bool:
+	for event in InputMap.action_get_events(action):
+		if event is InputEventJoypadMotion and (event as InputEventJoypadMotion).axis == axis:
 			return true
 	return false
 
