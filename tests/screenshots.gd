@@ -110,6 +110,22 @@ func _ready() -> void:
 	await _game_seconds(1.0)
 	await _shot("cover", "Taking cover behind a concrete barrier.")
 	game.queue_free()
+	await get_tree().process_frame
+
+	# Two-player split screen.
+	Game.coop = true
+	Game.coop_joypads = [-1, 5]
+	var coop: Survival = SURVIVAL_SCENE.instantiate()
+	add_child(coop)
+	coop.break_left = 0.1
+	for each: Player in coop.players:
+		each.hurt.connect(func(_damage: float) -> void: each.health = each.max_health * 0.7)
+		each.set(&"_yaw", PI)
+	coop.players[1].set(&"_yaw", PI * 0.8)
+	await _game_seconds(4.0)
+	await _shot("coop", "Local co-op: two players in split screen.")
+	coop.queue_free()
+	Game.coop = false
 	Music.stop()
 	await _game_seconds(Music.FADE_TIME + 0.3)
 

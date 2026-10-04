@@ -170,6 +170,19 @@ func play_death() -> void:
 	_dive.active = false
 
 
+## Stands back up after [method play_death].
+func revive() -> void:
+	if not _dead:
+		return
+	_dead = false
+	_locomotion = Locomotion.IDLE
+	_tree.set(&"parameters/locomotion/transition_request", "idle")
+	_tree.set(&"parameters/upper/blend_amount", 1.0)
+	_twist.active = true
+	_arms.active = true
+	_head.active = true
+
+
 ## Recolors the clothes: a multiplier for the jacket and one for the pants.
 ## Each character gets its own materials.
 func set_clothes_tint(jacket: Color, pants: Color) -> void:

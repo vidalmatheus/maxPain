@@ -292,6 +292,7 @@ func _ready() -> void:
 
 	await _test_training()
 	await _test_survival()
+	await _test_coop()
 	await _test_title_screen()
 
 	SoundFx.stop_all()
@@ -436,6 +437,66 @@ func _test_survival() -> void:
 	_check(game_over[0], "the game over screen comes up")
 	game.queue_free()
 	await _frames(2)
+
+
+func _test_coop() -> void:
+	# Player one on the keyboard, player two on controller 5.
+	Game.coop = true
+	Game.coop_joypads = [-1, 5]
+	var game: Survival = SURVIVAL_SCENE.instantiate()
+	add_child(game)
+	await _frames(10)
+	_check(game.players.size() == 2 and get_tree().get_nodes_in_group(&"player").size() == 2, "co-op brings in player two")
+	_check(game.find_children("*", "SubViewport", true, false).size() == 2 and get_viewport().disable_3d,
+			"the screen splits in two halves")
+	var huds := 0
+	for view: SubViewport in game.find_children("*", "SubViewport", true, false):
+		huds += view.find_children("*", "CanvasLayer", false, false).size()
+	_check(huds == 2, "each half has its own HUD")
+	var one := game.players[0]
+	var two := game.players[1]
+	# Player two's controller moves only player two.
+	var one_start := one.global_position
+	var two_start := two.global_position
+	var stick := InputEventJoypadMotion.new()
+	stick.device = 5
+	stick.axis = JOY_AXIS_LEFT_X
+	stick.axis_value = 1.0
+	Input.parse_input_event(stick)
+	await _frames(30)
+	stick = stick.duplicate()
+	stick.axis_value = 0.0
+	Input.parse_input_event(stick)
+	_check(two.global_position.distance_to(two_start) > 0.5 and one.global_position.distance_to(one_start) < 0.1,
+			"player two's controller moves player two only")
+	await _frames(30)
+	# And the keyboard moves only player one.
+	one_start = one.global_position
+	two_start = two.global_position
+	var key := InputEventKey.new()
+	key.physical_keycode = KEY_W
+	key.pressed = true
+	Input.parse_input_event(key)
+	await _frames(30)
+	key = key.duplicate()
+	key.pressed = false
+	Input.parse_input_event(key)
+	await _frames(2)
+	_check(one.global_position.distance_to(one_start) > 0.5 and two.global_position.distance_to(two_start) < 0.1,
+			"the keyboard moves player one only (%.2f, %.2f)" % [one.global_position.distance_to(one_start), two.global_position.distance_to(two_start)])
+	# A fallen player gets back up at the next wave; both down is game over.
+	two.take_hit(1000.0, two.global_position + Vector3(0, 1.2, 0), Vector3.FORWARD)
+	_check(two.state == Player.State.DEAD and not game.is_over, "the game goes on while one player is standing")
+	game.call(&"_start_wave")
+	await _frames(2)
+	_check(two.state == Player.State.NORMAL and two.health > 0.0, "a fallen player gets back up at the next wave")
+	for each: Player in game.players:
+		each.take_hit(1000.0, each.global_position + Vector3(0, 1.2, 0), Vector3.FORWARD)
+	_check(game.is_over, "the game is over when both players are down")
+	game.queue_free()
+	await _frames(2)
+	_check(not get_viewport().disable_3d, "leaving co-op restores the main view")
+	Game.coop = false
 
 
 func _test_title_screen() -> void:

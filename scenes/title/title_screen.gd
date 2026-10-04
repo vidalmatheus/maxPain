@@ -2,8 +2,9 @@ class_name TitleScreen
 extends Node3D
 ## Title screen: "MAX PAIN" over the snowy street at night, with a slow
 ## camera move, Max standing guard with his Berettas, and the main menu:
-## start a survival game, pick the difficulty, practice on the training
-## range or read the controls. Cold, melancholic strings play in the background.
+## start a survival game (alone or in two-player split screen), pick the
+## difficulty, practice on the training range or read the controls. Cold,
+## melancholic strings play in the background.
 
 const TRAINING_SCENE := "res://scenes/main.tscn"
 const BERETTA := preload("res://scenes/weapons/beretta.tscn")
@@ -20,6 +21,7 @@ var _difficulty_info: Label
 var _controls_panel: Control
 var _controls_button: Button
 var _controls_label: Label
+var _notice: Label
 
 @onready var camera: Camera3D = $Camera3D
 @onready var max_model: CharacterModel = $Max
@@ -127,6 +129,8 @@ func _build_ui() -> void:
 	column.add_child(_menu)
 	var start := _menu_button("Start")
 	start.pressed.connect(Game.start_survival)
+	var coop := _menu_button("Co-op (2 players)")
+	coop.pressed.connect(Game.start_coop)
 	_difficulty_button = _menu_button("")
 	_difficulty_button.pressed.connect(_cycle_difficulty.bind(1))
 	_difficulty_info = MenuStyle.label("", 18, MenuStyle.DIM)
@@ -139,6 +143,11 @@ func _build_ui() -> void:
 	var sound := MenuStyle.sound_button(44)
 	sound.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_menu.add_child(sound)
+	# Messages such as "connect a controller for player 2".
+	_notice = MenuStyle.label("", 20, Color(0.85, 0.2, 0.15))
+	_notice.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	column.add_child(_notice)
+	Game.message.connect(_show_notice)
 
 	var credits := MenuStyle.label("A Max Payne fan tribute. Not affiliated with Remedy or Rockstar.\n"
 			+ "Music: \"When Snow Become Ashes\" by Alexandr Zhelanov, \"Hitman\" by Kevin MacLeod (incompetech.com), CC BY 4.0.", 13, Color(1, 1, 1, 0.45))
@@ -165,6 +174,10 @@ func _build_ui() -> void:
 	controls_column.add_child(back)
 	_controls_panel.add_child(controls_column)
 	ui.add_child(_controls_panel)
+
+
+func _show_notice(text: String) -> void:
+	_notice.text = text
 
 
 func _menu_button(text: String) -> Button:

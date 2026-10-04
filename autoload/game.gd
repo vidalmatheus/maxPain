@@ -61,6 +61,11 @@ const SETTINGS := {
 var difficulty := Difficulty.HARD_BOILED
 ## All sound (effects and music) off.
 var muted := false
+## Local co-op: a second player joins on their own controller, in split
+## screen. [member coop_joypads] holds player one's controller (-1: keyboard
+## and mouse only) and player two's.
+var coop := false
+var coop_joypads: Array[int] = []
 
 var _best_waves := {}
 
@@ -111,6 +116,26 @@ func set_difficulty(level: Difficulty) -> void:
 
 
 func start_survival() -> void:
+	coop = false
+	_change_scene(SURVIVAL_SCENE)
+
+
+## Starts a two-player survival game. Player two needs a controller; player
+## one plays with the keyboard and mouse, or with a second controller.
+## Without any controller it only says so and returns false.
+func start_coop() -> bool:
+	var pads := Input.get_connected_joypads()
+	if pads.is_empty():
+		message.emit("Connect a controller for player 2")
+		return false
+	coop_joypads = [pads[0], pads[1]] if pads.size() >= 2 else [-1, pads[0]]
+	coop = true
+	_change_scene(SURVIVAL_SCENE)
+	return true
+
+
+## Plays the same survival game (single player or co-op) again.
+func restart_survival() -> void:
 	_change_scene(SURVIVAL_SCENE)
 
 

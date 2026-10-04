@@ -97,6 +97,9 @@ const JOY_AXES := {
 }
 
 const LOOK_ACTIONS: Array[StringName] = [&"look_left", &"look_right", &"look_up", &"look_down"]
+## Actions that belong to the game rather than to a player: they are not
+## copied for each player in local co-op (see [method add_player_actions]).
+const SHARED_ACTIONS: Array[StringName] = [&"toggle_help", &"toggle_fullscreen", &"release_mouse", &"pause"]
 
 ## Godot's built-in menu actions have no controller buttons for confirming
 ## and going back; add them (Cross / A confirms, Circle / B goes back).
@@ -183,6 +186,29 @@ func _unhandled_input(event: InputEvent) -> void:
 			window.mode = Window.MODE_FULLSCREEN
 
 
+## Local co-op: creates a copy of every gameplay action for one player,
+## named [param prefix] + the action (e.g. "p2_fire"), bound to the keyboard
+## and mouse if [param keyboard] and to the controller [param joypad] (none
+## if it is -1).
+func add_player_actions(prefix: String, joypad: int, keyboard: bool) -> void:
+	var defaults := _build_default_events()
+	for action: StringName in defaults:
+		if action in SHARED_ACTIONS:
+			continue
+		var player_action := StringName(prefix + action)
+		if InputMap.has_action(player_action):
+			InputMap.erase_action(player_action)
+		InputMap.add_action(player_action, LOOK_DEADZONE if action in LOOK_ACTIONS else DEADZONE)
+		for event: InputEvent in defaults[action]:
+			if event is InputEventJoypadButton or event is InputEventJoypadMotion:
+				if joypad < 0:
+					continue
+				event.device = joypad
+			elif not keyboard:
+				continue
+			InputMap.action_add_event(player_action, event)
+
+
 ## Returns the button/key name to show for [param action] on the current layout.
 func prompt(action: StringName) -> String:
 	return PROMPTS[action][layout]
@@ -196,10 +222,13 @@ func is_using_touch() -> bool:
 	return layout == Layout.TOUCH
 
 
-## Vibrates the active gamepad, if the player is using one. Motor strengths
-## go from 0 to 1 and [param duration] is in real seconds.
-func rumble(weak_magnitude: float, strong_magnitude: float, duration: float) -> void:
-	if is_using_gamepad() and active_joypad >= 0:
+## Vibrates the active gamepad, if the player is using one, or a co-op
+## player's [param joypad] (-2: that player has none). Motor strengths go
+## from 0 to 1 and [param duration] is in real seconds.
+func rumble(weak_magnitude: float, strong_magnitude: float, duration: float, joypad := -1) -> void:
+	if joypad >= 0:
+		Input.start_joy_vibration(joypad, weak_magnitude, strong_magnitude, duration)
+	elif joypad == -1 and is_using_gamepad() and active_joypad >= 0:
 		Input.start_joy_vibration(active_joypad, weak_magnitude, strong_magnitude, duration)
 
 

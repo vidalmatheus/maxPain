@@ -89,6 +89,12 @@ for Windows, Linux or macOS, see [Exporting builds](#exporting-builds-windows-li
 - **Phones and tablets**: on-screen controls in the browser (or a native
   mobile build), fullscreen landscape on the first touch, and a "rotate your
   device" hint when held upright.
+- **Local co-op**: two players in split screen, each with their own camera
+  and HUD (P2 wears a tan coat). Player two needs a controller; player one
+  plays with the keyboard and mouse, or a second controller. Mobsters go
+  after the closest player, a fallen player gets back up when the next wave
+  starts, and the game ends when both are down. Bullet time and adrenaline
+  are shared.
 - **Training range**: mobsters at the far end shoot back at the difficulty
   picked on the title screen, and each one comes back at its spot 5 seconds
   after it dies. If Max dies, the range starts over.

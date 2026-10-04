@@ -104,7 +104,7 @@ func _build_game_over() -> Control:
 	_game_over_stats = MenuStyle.label("", 26, MenuStyle.DIM)
 	column.add_child(_game_over_stats)
 	_retry_button = MenuStyle.button("Try again")
-	_retry_button.pressed.connect(Game.start_survival)
+	_retry_button.pressed.connect(Game.restart_survival)
 	var title := MenuStyle.button("Quit to title")
 	title.pressed.connect(Game.go_to_title)
 	column.add_child(_retry_button)

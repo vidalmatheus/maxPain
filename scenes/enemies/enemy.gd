@@ -110,8 +110,10 @@ func _physics_process(delta: float) -> void:
 		move_and_slide()
 		return
 	if target == null or target.state == Player.State.DEAD:
-		_idle(delta)
-		return
+		_pick_target()
+		if target == null or target.state == Player.State.DEAD:
+			_idle(delta)
+			return
 	if _stagger_timer > 0.0:
 		_stagger_timer -= delta
 		_idle(delta)
@@ -169,11 +171,22 @@ func _idle(delta: float) -> void:
 
 ## Re-evaluates sight and where to go a few times per second.
 func _think() -> void:
+	_pick_target()
 	var eye := global_position + Vector3(0, EYE_HEIGHT, 0)
 	var query := PhysicsRayQueryParameters3D.create(eye, target.get_target_point(), 1, [get_rid()])
 	_can_see = get_world_3d().direct_space_state.intersect_ray(query).is_empty()
 	if state == State.ADVANCE:
 		agent.target_position = target.global_position
+
+
+## Goes after the closest player still standing (there are two in co-op).
+func _pick_target() -> void:
+	var closest := INF
+	for player: Player in get_tree().get_nodes_in_group(&"player"):
+		var distance := global_position.distance_squared_to(player.global_position)
+		if player.state != Player.State.DEAD and distance < closest:
+			closest = distance
+			target = player
 
 
 func _follow_path(speed: float) -> Vector3:

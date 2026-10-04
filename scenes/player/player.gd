@@ -127,6 +127,13 @@ const MELEE_HIT_SOUND := preload("res://assets/sounds/melee_hit.ogg")
 @export var aim_friction := 0.45
 
 var state := State.NORMAL
+## Local co-op: this player's actions are named input_prefix + the action
+## (see GameInput.add_player_actions), and [member joypad] is their
+## controller (-1: any, -2: none). Only a player with [member uses_mouse] aims with the
+## mouse. A single player keeps the defaults.
+var input_prefix := ""
+var joypad := -1
+var uses_mouse := true
 ## World position the crosshair is currently pointing at.
 var aim_point := Vector3.ZERO
 
@@ -156,6 +163,7 @@ var _cover_low := false
 var _cover_popup := 0.0
 ## Time left before a shot queued while popping up from cover.
 var _pending_fire := -1.0
+var _action_names := {}
 ## 0 normally, 1 zoomed in to aim.
 var _aim_zoom := 0.0
 var _default_fov := 70.0
@@ -203,6 +211,8 @@ func _ready() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if not uses_mouse:
+		return
 	var captured := Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
 
 	# Clicking the window grabs the mouse; that click must not fire. Not on
@@ -277,47 +287,47 @@ func _process_actions() -> void:
 		_pending_fire -= get_process_delta_time()
 		if _pending_fire < 0.0:
 			_fire()
-	if Input.is_action_just_pressed(&"fire") and Engine.get_process_frames() != _capture_click_frame:
+	if Input.is_action_just_pressed(_act(&"fire")) and Engine.get_process_frames() != _capture_click_frame:
 		_fire_held = true
 		_auto_fire_timer = _auto_fire_interval()
 		_fire()
 	elif _fire_held:
-		if not Input.is_action_pressed(&"fire"):
+		if not Input.is_action_pressed(_act(&"fire")):
 			_fire_held = false
 		else:
 			_auto_fire_timer -= get_process_delta_time()
 			if _auto_fire_timer <= 0.0:
 				_auto_fire_timer = maxf(_auto_fire_timer + _auto_fire_interval(), 0.0)
 				_fire()
-	if Input.is_action_just_pressed(&"melee"):
+	if Input.is_action_just_pressed(_act(&"melee")):
 		melee()
-	if Input.is_action_just_pressed(&"take_cover"):
+	if Input.is_action_just_pressed(_act(&"take_cover")):
 		if state == State.COVER:
 			_leave_cover()
 		else:
 			try_take_cover()
-	if Input.is_action_just_pressed(&"use_painkiller"):
+	if Input.is_action_just_pressed(_act(&"use_painkiller")):
 		use_painkiller()
-	if Input.is_action_just_pressed(&"reload"):
+	if Input.is_action_just_pressed(_act(&"reload")):
 		pistol.reload()
-	if Input.is_action_just_pressed(&"jump"):
+	if Input.is_action_just_pressed(_act(&"jump")):
 		_try_jump()
-	if Input.is_action_just_pressed(&"shootdodge"):
+	if Input.is_action_just_pressed(_act(&"shootdodge")):
 		_try_shootdodge()
-	if Input.is_action_just_pressed(&"bullet_time"):
+	if Input.is_action_just_pressed(_act(&"bullet_time")):
 		BulletTime.toggle()
-	if Input.is_action_just_pressed(&"weapon_beretta"):
+	if Input.is_action_just_pressed(_act(&"weapon_beretta")):
 		pistol.set_dual(false)
-	if Input.is_action_just_pressed(&"weapon_dual_berettas"):
+	if Input.is_action_just_pressed(_act(&"weapon_dual_berettas")):
 		pistol.set_dual(true)
-	if Input.is_action_just_pressed(&"next_weapon"):
+	if Input.is_action_just_pressed(_act(&"next_weapon")):
 		pistol.set_dual(not pistol.dual)
 
 
 ## Zooms in while the aim button is held. Real time, so it stays snappy in
 ## bullet time.
 func _process_aim_zoom(real_delta: float) -> void:
-	var aiming := Input.is_action_pressed(&"aim_zoom") and state != State.DEAD
+	var aiming := Input.is_action_pressed(_act(&"aim_zoom")) and state != State.DEAD
 	_aim_zoom = move_toward(_aim_zoom, 1.0 if aiming else 0.0, aim_zoom_speed * real_delta)
 	var t := smoothstep(0.0, 1.0, _aim_zoom)
 	camera.fov = lerpf(_default_fov, aim_fov, t)
@@ -335,7 +345,7 @@ func _look_multiplier() -> float:
 
 ## Right-stick aiming. Uses real time so it is not slowed by bullet time.
 func _process_gamepad_look(real_delta: float) -> void:
-	var look := Input.get_vector(&"look_left", &"look_right", &"look_up", &"look_down")
+	var look := Input.get_vector(_act(&"look_left"), _act(&"look_right"), _act(&"look_up"), _act(&"look_down"))
 	var magnitude := look.length()
 	if magnitude < 0.001:
 		_look_hold_time = 0.0
@@ -369,7 +379,7 @@ func _physics_diving(delta: float) -> void:
 	if _state_time > 0.15 and is_on_floor():
 		_set_state(State.PRONE)
 		BulletTime.end_shootdodge()
-		GameInput.rumble(0.4, 0.8, 0.25)
+		GameInput.rumble(0.4, 0.8, 0.25, joypad)
 
 
 func _physics_prone(delta: float) -> void:
@@ -377,7 +387,7 @@ func _physics_prone(delta: float) -> void:
 	if not is_on_floor():
 		velocity.y -= gravity * delta
 
-	var wants_up := _get_move_direction() != Vector3.ZERO or Input.is_action_pressed(&"jump")
+	var wants_up := _get_move_direction() != Vector3.ZERO or Input.is_action_pressed(_act(&"jump"))
 	if _state_time >= prone_min_time and wants_up:
 		_set_state(State.GETTING_UP)
 
@@ -429,7 +439,7 @@ func _fire() -> void:
 	_update_aim()
 	if pistol.try_fire(aim_point, [get_rid()]):
 		model.play_fire()
-		GameInput.rumble(0.3, 0.5, 0.08)
+		GameInput.rumble(0.3, 0.5, 0.08, joypad)
 		_add_look(randf_range(-0.3, 0.3) * deg_to_rad(recoil_degrees), deg_to_rad(recoil_degrees))
 
 
@@ -487,7 +497,7 @@ func _land_melee() -> void:
 	if victim.has_method(&"stagger"):
 		victim.call(&"stagger", direction * melee_push)
 	SoundFx.play_3d(MELEE_HIT_SOUND, point, 0.0, randf_range(0.9, 1.05), 6.0)
-	GameInput.rumble(0.7, 0.9, 0.18)
+	GameInput.rumble(0.7, 0.9, 0.18, joypad)
 
 
 # --- Cover ---------------------------------------------------------------------
@@ -608,7 +618,7 @@ func take_hit(damage: float, point: Vector3, direction: Vector3) -> void:
 	health_changed.emit(health, max_health)
 	hurt.emit(damage)
 	model.play_hit()
-	GameInput.rumble(0.6, 0.4, 0.15)
+	GameInput.rumble(0.6, 0.4, 0.15, joypad)
 	if health <= 0.0:
 		_die()
 
@@ -623,9 +633,21 @@ func _die() -> void:
 	model.play_death()
 	velocity.x = 0.0
 	velocity.z = 0.0
-	if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+	if uses_mouse and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	died.emit()
+
+
+## Gets back up with half health (a co-op player, at the next wave).
+func revive(at: Vector3) -> void:
+	if state != State.DEAD:
+		return
+	global_position = at
+	velocity = Vector3.ZERO
+	health = max_health * 0.5
+	health_changed.emit(health, max_health)
+	model.revive()
+	_set_state(State.NORMAL)
 
 
 ## Takes a painkiller, which heals over a moment. Returns true if one was taken.
@@ -782,7 +804,7 @@ func _add_look(yaw_delta: float, pitch_delta: float) -> void:
 
 ## Movement input relative to the camera, on the ground plane.
 func _get_move_direction() -> Vector3:
-	var input := Input.get_vector(&"move_left", &"move_right", &"move_forward", &"move_back")
+	var input := Input.get_vector(_act(&"move_left"), _act(&"move_right"), _act(&"move_forward"), _act(&"move_back"))
 	if input.length_squared() < 0.01:
 		return Vector3.ZERO
 	return Basis(Vector3.UP, _yaw) * Vector3(input.x, 0.0, input.y)
@@ -797,6 +819,15 @@ func _accelerate_horizontal(target: Vector3, max_step: float) -> void:
 	var horizontal := Vector3(velocity.x, 0.0, velocity.z).move_toward(target, max_step)
 	velocity.x = horizontal.x
 	velocity.z = horizontal.z
+
+
+## This player's name for [param action].
+func _act(action: StringName) -> StringName:
+	if input_prefix.is_empty():
+		return action
+	if not _action_names.has(action):
+		_action_names[action] = StringName(input_prefix + action)
+	return _action_names[action]
 
 
 ## Frame-rate independent interpolation weight.
