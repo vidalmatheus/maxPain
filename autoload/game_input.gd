@@ -38,7 +38,10 @@ const KEYS := {
 	&"move_left": [KEY_A, KEY_LEFT],
 	&"move_right": [KEY_D, KEY_RIGHT],
 	&"jump": [KEY_SPACE],
-	&"bullet_time": [KEY_SHIFT, KEY_Q],
+	&"bullet_time": [KEY_Q],
+	# Like the right mouse button: with a direction it dives, standing still
+	# it toggles bullet time.
+	&"shootdodge": [KEY_SHIFT],
 	&"reload": [KEY_R],
 	&"release_mouse": [KEY_ESCAPE],
 	&"toggle_help": [KEY_F1],
@@ -100,8 +103,8 @@ const PROMPTS := {
 	&"fire": ["Left click", "RT", "R2", "FIRE"],
 	&"jump": ["Space", "A", "Cross", "JUMP"],
 	&"reload": ["R", "X", "Square", "RELOAD"],
-	&"bullet_time": ["Shift / Q", "LB / R3", "L1 / R3", "SLOW"],
-	&"shootdodge": ["Right click", "RB / LT", "R1 / L2", "DODGE"],
+	&"bullet_time": ["Q", "LB / R3", "L1 / R3", "SLOW"],
+	&"shootdodge": ["Right click / Shift", "RB / LT", "R1 / L2", "DODGE"],
 	&"toggle_help": ["F1", "View", "Create", "?"],
 	&"pause": ["Esc / P", "Menu", "Options", "II"],
 	&"take_cover": ["C", "B", "Circle", "COVER"],

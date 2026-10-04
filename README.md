@@ -92,8 +92,8 @@ switch automatically to the device you are using.
 | Move | WASD / arrows | Left stick | Left stick |
 | Aim | Mouse | Right stick | Right stick |
 | Fire | Left click | RT | R2 |
-| Shootdodge (with a direction) | Right click | RB or LT | R1 or L2 |
-| Bullet time (toggle) | Shift or Q | LB or R3 (click) | L1 or R3 (click) |
+| Shootdodge (with a direction) | Right click or Shift | RB or LT | R1 or L2 |
+| Bullet time (toggle) | Q (or right click / Shift standing still) | LB or R3 (click) | L1 or R3 (click) |
 | Jump | Space | A | Cross |
 | Reload | R | X | Square |
 | Beretta / dual Berettas | 1 / 2 / mouse wheel | Y / D-pad left/right | Triangle / D-pad left/right |
