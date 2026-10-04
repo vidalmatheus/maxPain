@@ -347,8 +347,10 @@ func _test_title_screen() -> void:
 		for connection in focused.pressed.get_connections():
 			if connection.callable.get_method() == &"start_survival":
 				focused.pressed.disconnect(connection.callable)
+	# Controller 1, not 0: browsers often number a reconnected controller 1.
 	var button := InputEventJoypadButton.new()
 	button.button_index = JOY_BUTTON_A
+	button.device = 1
 	button.pressed = true
 	Input.parse_input_event(button)
 	await _frames(2)
@@ -356,7 +358,7 @@ func _test_title_screen() -> void:
 	button.pressed = false
 	Input.parse_input_event(button)
 	await _frames(2)
-	_check(pressed[0], "a controller's Cross / A button presses menu buttons")
+	_check(pressed[0], "any controller's Cross / A button presses menu buttons")
 	title.queue_free()
 	await _frames(2)
 

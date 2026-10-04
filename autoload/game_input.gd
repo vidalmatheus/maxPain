@@ -24,6 +24,10 @@ const DEADZONE := 0.25
 const LOOK_DEADZONE := 0.1
 ## How far an analog stick must move before it counts as "using the gamepad".
 const ANALOG_ACTIVITY_THRESHOLD := 0.4
+## Device id that makes a binding match every controller (InputMap's
+## ALL_DEVICES). Events made in code default to device 0, the first
+## controller only, while browsers often number a (re)connected controller 1.
+const ALL_DEVICES := -1
 ## Mobile browsers send emulated mouse events right after touches; mouse input
 ## this soon after a touch is ignored instead of switching away from touch.
 const TOUCH_MOUSE_GRACE_MSEC := 1000
@@ -125,6 +129,7 @@ func _ready() -> void:
 	for action: StringName in UI_JOY_BUTTONS:
 		var joy_button := InputEventJoypadButton.new()
 		joy_button.button_index = UI_JOY_BUTTONS[action]
+		joy_button.device = ALL_DEVICES
 		if not InputMap.action_has_event(action, joy_button):
 			InputMap.action_add_event(action, joy_button)
 	Input.joy_connection_changed.connect(_on_joy_connection_changed)
@@ -223,12 +228,14 @@ func _build_default_events() -> Dictionary:
 		for button: JoyButton in JOY_BUTTONS[action]:
 			var joy_button := InputEventJoypadButton.new()
 			joy_button.button_index = button
+			joy_button.device = ALL_DEVICES
 			_append(events, action, joy_button)
 	for action: StringName in JOY_AXES:
 		for entry: Array in JOY_AXES[action]:
 			var motion := InputEventJoypadMotion.new()
 			motion.axis = entry[0]
 			motion.axis_value = entry[1]
+			motion.device = ALL_DEVICES
 			_append(events, action, motion)
 	return events
 
