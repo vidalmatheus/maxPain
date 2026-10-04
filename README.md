@@ -5,6 +5,11 @@ A fan-made, Max Payne inspired third-person shooter built with
 New York street at night, where waves of mobsters come for Max and he fights
 back with bullet time, **shootdodges** and cover.
 
+### ▶ [Play in your browser](https://vidalmatheus.github.io/maxPain/)
+
+Works on desktop and on phones (hold the phone in landscape). To build it
+for Windows, Linux or macOS, see [Exporting builds](#exporting-builds-windows-linux-macos-web).
+
 | Title | Survival |
 |---|---|
 | ![Title screen](docs/screenshots/title.png) | ![Survival](docs/screenshots/survival.png) |
