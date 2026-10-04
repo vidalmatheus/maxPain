@@ -108,6 +108,23 @@ func _ready() -> void:
 	_check(is_equal_approx(Engine.time_scale, 1.0), "time scale returns to 1.0")
 	_check(not SoundFx.is_bullet_time_loop_playing() and not SoundFx.is_world_muffled(), "normal speed sounds normal again")
 
+	# --- Original Max Payne animations ---------------------------------------------
+	# Standing still a while: guns away, warming the hands.
+	player.warm_hands_delay = 0.5
+	await get_tree().create_timer(1.2).timeout
+	_check(player.model.is_warming() and not player.pistol.right_gun.visible, "standing still, Max puts the guns away and warms his hands")
+	player.call(&"_fire")
+	await _frames(2)
+	_check(player.pistol.right_gun.visible, "pulling the trigger draws the guns again")
+	player.warm_hands_delay = 8.0
+	await get_tree().create_timer(0.5).timeout
+	# Badly hurt: hunched and limping.
+	player.health = player.max_health * 0.2
+	await _frames(5)
+	_check(player.model.hurt, "badly hurt, Max limps")
+	player.health = player.max_health
+	await _frames(2)
+
 	# --- Shootdodge -----------------------------------------------------------
 	Input.action_press(&"move_left")
 	await _frames(2)

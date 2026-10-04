@@ -4,7 +4,7 @@ extends Node
 ## outside camera, to review the character's poses and how it holds the guns.
 ##
 ## Run with (needs a renderer, like tests/screenshots.tscn):
-##   godot --path . res://tests/pose_gallery.tscn -- --output=<directory> [--only=stand|whip]
+##   godot --path . res://tests/pose_gallery.tscn -- --output=<directory> [--only=stand|whip|mp1]
 
 const MAIN_SCENE := preload("res://scenes/main.tscn")
 
@@ -51,6 +51,10 @@ func _ready() -> void:
 	BulletTime.adrenaline_changed.connect(func(_v: float, _m: float) -> void: BulletTime.adrenaline = BulletTime.max_adrenaline)
 	await _physics_frames(30)
 
+	if _only == "mp1":
+		await _mp1_shots()
+		get_tree().quit()
+		return
 	for dual in [false, true]:
 		_player.pistol.set_dual(dual)
 		await _game_seconds(0.5)
@@ -96,6 +100,43 @@ func _whip_shots(label: String) -> void:
 		await _physics_frames(3)
 		await _capture("whip_%s_%d" % [label, roundi(phase * 100)], [Vector3(2.4, 1.3, -0.8)])
 	arms.strike = 0.0
+
+
+## The original game's animations: reloading one and two pistols, warming
+## the hands, limping and dying.
+func _mp1_shots() -> void:
+	for dual in [false, true]:
+		_reset_player()
+		_player.pistol.set_dual(dual)
+		await _game_seconds(0.6)
+		_player.pistol.ammo_in_magazine = 1
+		_player.pistol.reload()
+		var label := "dual" if dual else "single"
+		for i in 3:
+			await _game_seconds(_player.pistol.dual_reload_time / 4.0 if dual else _player.pistol.reload_time / 4.0)
+			await _capture("reload_%s_%d" % [label, i], [Vector3(2.0, 1.4, -1.2)])
+	_player.pistol.set_dual(false)
+	_reset_player()
+	_player.warm_hands_delay = 0.2
+	await _game_seconds(2.5)
+	await _capture("warming", [Vector3(1.8, 1.4, -1.6)])
+	_player.warm_hands_delay = 8.0
+	_reset_player()
+	_player.health = _player.max_health * 0.2
+	var actions := _press(Vector2(0, -1))
+	await _game_seconds(1.0)
+	await _capture("limp", [Vector3(2.4, 0.8, -1.0)])
+	await _game_seconds(0.4)
+	await _capture("limp_b", [Vector3(2.4, 0.8, -1.0)])
+	for action: StringName in actions:
+		Input.action_release(action)
+	await _game_seconds(0.5)
+	await _capture("hurt_stand", [Vector3(2.0, 1.2, -1.6)])
+	_player.take_hit(1000.0, _player.global_position + Vector3(0, 1.2, 0), Vector3.FORWARD)
+	await _game_seconds(0.5)
+	await _capture("death_a", [Vector3(3.0, 1.6, 0.0)])
+	await _game_seconds(2.0)
+	await _capture("death_b", [Vector3(3.0, 1.6, 0.0)])
 
 
 func _run_shots(label: String, input: Vector2) -> void:

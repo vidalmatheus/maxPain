@@ -83,6 +83,12 @@ const MELEE_HIT_SOUND := preload("res://assets/sounds/melee_hit.ogg")
 @export var painkiller_heal := 40.0
 @export var painkiller_time := 1.2
 @export var max_painkillers := 8
+## Below this share of health Max is badly hurt: he stands hunched and limps,
+## slower.
+@export var hurt_health := 0.3
+@export var hurt_speed_multiplier := 0.7
+## Seconds standing still before Max puts his guns away and warms his hands.
+@export var warm_hands_delay := 8.0
 
 @export_group("Cover")
 ## How far away cover can be taken.
@@ -164,6 +170,9 @@ var _cover_popup := 0.0
 ## Time left before a shot queued while popping up from cover.
 var _pending_fire := -1.0
 var _action_names := {}
+var _idle_time := 0.0
+var _warming := false
+var _looking := false
 ## 0 normally, 1 zoomed in to aim.
 var _aim_zoom := 0.0
 var _default_fov := 70.0
@@ -229,6 +238,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	var just_captured := Engine.get_process_frames() - _capture_click_frame <= 1
 	if event is InputEventMouseMotion and captured and not just_captured:
 		var motion := event as InputEventMouseMotion
+		_idle_time = 0.0
 		var sensitivity := mouse_sensitivity * _look_multiplier()
 		_add_look(-motion.relative.x * sensitivity, -motion.relative.y * sensitivity)
 	elif event.is_action_pressed(&"release_mouse"):
@@ -240,6 +250,8 @@ func _process(delta: float) -> void:
 	var real_delta := BulletTime.to_real_delta(delta)
 	_process_aim_zoom(real_delta)
 	_process_gamepad_look(real_delta)
+	model.hurt = state != State.DEAD and health < max_health * hurt_health
+	_process_idle(real_delta)
 
 	camera_yaw.rotation.y = _yaw
 	camera_pitch.rotation.x = _pitch
@@ -347,6 +359,7 @@ func _look_multiplier() -> float:
 func _process_gamepad_look(real_delta: float) -> void:
 	var look := Input.get_vector(_act(&"look_left"), _act(&"look_right"), _act(&"look_up"), _act(&"look_down"))
 	var magnitude := look.length()
+	_looking = magnitude >= 0.001
 	if magnitude < 0.001:
 		_look_hold_time = 0.0
 		return
@@ -363,7 +376,7 @@ func _process_gamepad_look(real_delta: float) -> void:
 
 func _physics_normal(delta: float) -> void:
 	var direction := _get_move_direction()
-	var speed := run_speed
+	var speed := run_speed * (hurt_speed_multiplier if model.hurt else 1.0)
 	if direction.dot(_get_aim_forward()) < -0.3:
 		speed *= backpedal_multiplier
 
@@ -428,6 +441,11 @@ func _try_shootdodge() -> void:
 
 func _fire() -> void:
 	if state == State.GETTING_UP or state == State.DEAD:
+		return
+	if model.is_warming():
+		# The first pull of the trigger only draws the guns.
+		_idle_time = 0.0
+		_set_warming(false)
 		return
 	if state == State.COVER:
 		var was_down := is_crouching()
@@ -794,7 +812,26 @@ func _get_dive_body_basis() -> Basis:
 
 ## Turns the camera by the given angles (radians). Used by the touch controls.
 func look(yaw_delta: float, pitch_delta: float) -> void:
+	_idle_time = 0.0
 	_add_look(yaw_delta, pitch_delta)
+
+
+## After standing still a while, Max puts the guns away and warms his hands
+## in the cold, like in the original game; any input brings them back.
+func _process_idle(real_delta: float) -> void:
+	var busy := state != State.NORMAL or not is_on_floor() or Vector2(velocity.x, velocity.z).length() > 0.2 \
+			or Input.is_anything_pressed() or _looking or pistol.is_reloading() or _melee_hit_timer >= 0.0
+	_idle_time = 0.0 if busy else _idle_time + real_delta
+	_set_warming(_idle_time >= warm_hands_delay)
+
+
+func _set_warming(enabled: bool) -> void:
+	if enabled == _warming:
+		return
+	_warming = enabled
+	model.set_warming(enabled)
+	pistol.right_gun.visible = not enabled
+	pistol.left_gun.visible = not enabled and pistol.dual
 
 
 func _add_look(yaw_delta: float, pitch_delta: float) -> void:

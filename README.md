@@ -51,6 +51,10 @@ for Windows, Linux or macOS, see [Exporting builds](#exporting-builds-windows-li
 - **Title screen** with music, difficulty selection, a training range (red
   practice targets, or mobsters who shoot back), the controls and a sound on/off option (also in the
   pause menu, remembered between visits); a pause menu and a game over screen.
+- **The original game's moves**: Max and the mobsters die with Max Payne 1's
+  death animations; badly hurt, Max stands hunched and limps (slower); he
+  reloads like in the original, with one pistol or two; and after standing
+  still for a while he puts his guns away and warms his hands in the cold.
 - **Animated Max Payne** model with Max Payne 3 style upper/lower body
   blending: the legs run in the movement direction (forwards or backwards)
   while the spine twists so the upper body always faces the aim. Arm IK keeps
@@ -252,7 +256,12 @@ grip). It also extracts the animations the game uses. See
 ```sh
 godot --headless --path . --import
 godot --headless --path . -s tools/build_character.gd -- --source=<animation packs dir>
+godot --headless --path . -s tools/retarget_mp1.gd
 ```
+
+`tools/retarget_mp1.gd` then adds the original Max Payne 1 animations (deaths,
+hurt stance and limp, reloads, warming the hands) from
+`assets/characters/max_payne/source/`, retargeted onto the rig.
 
 ## Project layout
 
@@ -287,6 +296,7 @@ assets/environment/    Cars, lamps and street props (CC0, see its README)
 assets/textures/street/  Asphalt, sidewalk, facade and snow textures (CC0, see its README)
 tools/export.sh        Exports builds into build/<platform>/
 tools/build_character.gd  Rigs the character and extracts its animations
+tools/retarget_mp1.gd     Adds the original Max Payne 1 animations to the character
 tools/prepare_sounds.sh   Cuts the sound effects out of their source packs
 tools/prepare_music.sh    Converts the music (and its short loops for the web)
 tools/prepare_textures.py Builds the street textures (lit windows, sidewalk joints)
@@ -326,7 +336,12 @@ Physics layers: `1 world`, `2 player`, `3 enemies`, `4 props`.
   [Sketchfab](https://sketchfab.com/3d-models/beretta-m9-d1200d9aa28f466484f7d3fdd7724e76),
   CC BY 4.0.
 - **Animations:** Universal Animation Library 1 and 2 by
-  [Quaternius](https://quaternius.com), CC0.
+  [Quaternius](https://quaternius.com), CC0. The deaths, the hurt stance and
+  limp, the reloads and warming the hands are the original game's, retargeted
+  from "Max Payne 1 (Animated + Updated again)" by
+  [pineware31](https://sketchfab.com/pineware31) on
+  [Sketchfab](https://sketchfab.com/3d-models/max-payne-1-animated-updated-again-91ea85f8ab5c4f8ea67711b3e615c01f),
+  CC BY 4.0; see [assets/characters/max_payne/README.md](assets/characters/max_payne/README.md).
 - **Sounds:** [Kenney](https://kenney.nl), The Free Firearm Sound Library
   (Ben Jaszczak et al.), SpringySpringo and MidFag on
   [OpenGameArt](https://opengameart.org), all CC0; see

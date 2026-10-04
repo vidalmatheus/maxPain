@@ -7,7 +7,9 @@ extends Node3D
 ## the guns on the aim line, and the head looking at the target.
 ##
 ## The tree is built in code so it is easy to read and review; the animations
-## come from res://assets/characters/max_payne/animations.res.
+## come from res://assets/characters/max_payne/animations.res. Deaths, the
+## hurt stance and limp, reloads and warming the hands in the cold are the
+## original Max Payne's (retargeted by tools/retarget_mp1.gd).
 
 ## Emitted every frame once the final pose (after all modifiers) is known;
 ## read the guns' places with [method get_gun_transform].
@@ -17,7 +19,12 @@ enum Locomotion { IDLE, RUN, RUN_BACK, AIR, CROUCH, DEAD }
 
 const ANIMATIONS := preload("res://assets/characters/max_payne/animations.res")
 const SKELETON_PATH := "Armature/Skeleton3D"
-const LOCOMOTION_INPUTS := ["idle", "run", "run_back", "air", "crouch", "dead"]
+const LOCOMOTION_INPUTS := ["idle", "run", "run_back", "air", "crouch", "dead", "idle_hurt", "walk_hurt"]
+const DEATHS := ["MP1_Death", "MP1_Death2"]
+## Ground speed (m/s) at which the limp plays at normal speed.
+const LIMP_SPEED := 1.6
+## How fast the hands go to warming (and back), per second.
+const WARM_FADE_SPEED := 2.5
 ## Ground speed (m/s) at which the jog animation plays at normal speed.
 const JOG_SPEED := 4.5
 ## Aim pitch (radians) that maps to the full "aim up/down" poses.
@@ -39,7 +46,13 @@ var _twist: AimTwistModifier
 var _arms: ArmIKModifier
 var _head: HeadLookModifier
 var _locomotion := Locomotion.IDLE
+var _locomotion_input := "idle"
 var _dead := false
+## Badly hurt: stands hunched and limps instead of jogging forward.
+var hurt := false
+## 0..1: how far into warming the hands (guns put away, IK off).
+var _warm := 0.0
+var _warming := false
 var _reload_timer: SceneTreeTimer
 ## Seconds into the current pistol-whip, and how long it lasts (0 = none).
 var _strike_time := 0.0
@@ -69,13 +82,20 @@ func _ready() -> void:
 	_head = HeadLookModifier.new()
 	skeleton.add_child(_head)
 	# Bone poses read later in the frame no longer include the modifiers, so
-	# grab the hands right after the last one.
-	_head.modification_processed.connect(_on_pose_finished)
+	# grab the hands once the final pose is known (also when the modifiers
+	# are off, e.g. dead).
+	skeleton.skeleton_updated.connect(_on_pose_finished)
 
 
 func _process(delta: float) -> void:
+	# Into warming slowly, out of it quickly (to shoot).
+	var warming := _warming and not _dead
+	_warm = move_toward(_warm, 1.0 if warming else 0.0, (WARM_FADE_SPEED if warming else 4.0 * WARM_FADE_SPEED) * delta)
+	_tree.set(&"parameters/warm/blend_amount", smoothstep(0.0, 1.0, _warm))
+	_twist.influence = 1.0 - _warm
+	_head.influence = 1.0 - _warm
 	# Let the reload animation drive the arms while it plays.
-	var ik_weight := 0.0 if _reload_timer != null else 1.0
+	var ik_weight := 0.0 if _reload_timer != null or _warm > 0.0 else 1.0
 	_arms.influence = move_toward(_arms.influence, ik_weight, IK_FADE_SPEED * delta)
 	_arms.recoil = move_toward(_arms.recoil, 0.0, RECOIL_RECOVERY * delta)
 	if _strike_duration > 0.0:
@@ -124,10 +144,20 @@ func set_dive_pose(amount: float, along: float) -> void:
 func set_locomotion(locomotion: Locomotion, ground_speed: float) -> void:
 	if _dead:
 		return
-	if locomotion != _locomotion:
-		_locomotion = locomotion
-		_tree.set(&"parameters/locomotion/transition_request", LOCOMOTION_INPUTS[locomotion])
-	var scale := clampf(ground_speed / JOG_SPEED, 0.6, 1.4) if locomotion == Locomotion.RUN or locomotion == Locomotion.RUN_BACK else 1.0
+	_locomotion = locomotion
+	var input: String = LOCOMOTION_INPUTS[locomotion]
+	if hurt and locomotion == Locomotion.IDLE:
+		input = "idle_hurt"
+	elif hurt and locomotion == Locomotion.RUN:
+		input = "walk_hurt"
+	if input != _locomotion_input:
+		_locomotion_input = input
+		_tree.set(&"parameters/locomotion/transition_request", input)
+	var scale := 1.0
+	if input == "walk_hurt":
+		scale = clampf(ground_speed / LIMP_SPEED, 0.7, 2.4)
+	elif locomotion == Locomotion.RUN or locomotion == Locomotion.RUN_BACK:
+		scale = clampf(ground_speed / JOG_SPEED, 0.6, 1.4)
 	_tree.set(&"parameters/locomotion_speed/scale", scale)
 
 
@@ -159,6 +189,10 @@ func play_death() -> void:
 		return
 	_dead = true
 	_locomotion = Locomotion.DEAD
+	_locomotion_input = "dead"
+	# One of the original game's deaths, at random.
+	var dead := (_tree.tree_root as AnimationNodeBlendTree).get_node(&"dead") as AnimationNodeAnimation
+	dead.animation = StringName(DEATHS.pick_random())
 	_tree.set(&"parameters/locomotion/transition_request", "dead")
 	_tree.set(&"parameters/locomotion_speed/scale", 1.0)
 	_tree.set(&"parameters/upper/blend_amount", 0.0)
@@ -176,6 +210,7 @@ func revive() -> void:
 		return
 	_dead = false
 	_locomotion = Locomotion.IDLE
+	_locomotion_input = "idle"
 	_tree.set(&"parameters/locomotion/transition_request", "idle")
 	_tree.set(&"parameters/upper/blend_amount", 1.0)
 	_twist.active = true
@@ -209,9 +244,23 @@ func play_melee(duration: float) -> void:
 	_strike_duration = duration
 
 
-## Plays the reload animation stretched to [param duration] seconds.
+## Puts the guns away and warms the hands in the cold ([param enabled]), or
+## takes them back out.
+func set_warming(enabled: bool) -> void:
+	_warming = enabled
+
+
+## Whether the hands are (going) to warming, guns away.
+func is_warming() -> bool:
+	return _warm > 0.0
+
+
+## Plays the reload animation (one pistol or two) stretched to
+## [param duration] seconds.
 func play_reload(duration: float) -> void:
-	var length := ANIMATIONS.get_animation(&"Pistol_Reload").length
+	var clip := &"MP1_Reload_Dual" if _arms.stance == ArmIKModifier.Stance.DUAL else &"MP1_Reload"
+	((_tree.tree_root as AnimationNodeBlendTree).get_node(&"reload_clip") as AnimationNodeAnimation).animation = clip
+	var length := ANIMATIONS.get_animation(clip).length
 	_tree.set(&"parameters/reload_speed/scale", length / maxf(duration, 0.1))
 	_tree.set(&"parameters/reload/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 	_reload_timer = get_tree().create_timer(duration, false)
@@ -233,7 +282,8 @@ func _build_tree() -> AnimationNodeBlendTree:
 	for i in LOCOMOTION_INPUTS.size():
 		locomotion.set_input_name(i, LOCOMOTION_INPUTS[i])
 	tree.add_node(&"locomotion", locomotion)
-	var clips := ["Pistol_Idle_Loop", "Jog_Fwd_Loop", "Jog_Fwd_Loop", "Jump_Loop", "Crouch_Idle_Loop", "Death01"]
+	var clips := ["Pistol_Idle_Loop", "Jog_Fwd_Loop", "Jog_Fwd_Loop", "Jump_Loop", "Crouch_Idle_Loop", DEATHS[0],
+			"MP1_Stand_Hurt", "MP1_Walk_Hurt"]
 	for i in clips.size():
 		var clip := _clip(clips[i])
 		if LOCOMOTION_INPUTS[i] == "run_back":
@@ -259,7 +309,7 @@ func _build_tree() -> AnimationNodeBlendTree:
 	tree.connect_node(&"upper", 1, &"aim")
 
 	# One-shot actions on the upper body.
-	tree.add_node(&"reload_clip", _clip("Pistol_Reload"))
+	tree.add_node(&"reload_clip", _clip("MP1_Reload"))
 	tree.add_node(&"reload_speed", AnimationNodeTimeScale.new())
 	tree.connect_node(&"reload_speed", 0, &"reload_clip")
 	var reload := AnimationNodeOneShot.new()
@@ -289,7 +339,14 @@ func _build_tree() -> AnimationNodeBlendTree:
 	tree.connect_node(&"hit", 0, &"fire")
 	tree.connect_node(&"hit", 1, &"hit_clip")
 
-	tree.connect_node(&"output", 0, &"hit")
+	# Warming the hands, for the whole body.
+	var warm := AnimationNodeBlend2.new()
+	tree.add_node(&"warm_clip", _clip("MP1_Warming_Hands"))
+	tree.add_node(&"warm", warm)
+	tree.connect_node(&"warm", 0, &"hit")
+	tree.connect_node(&"warm", 1, &"warm_clip")
+
+	tree.connect_node(&"output", 0, &"warm")
 	return tree
 
 
