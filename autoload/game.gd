@@ -129,12 +129,22 @@ func start_survival() -> void:
 func start_coop() -> bool:
 	var pads := Input.get_connected_joypads()
 	if pads.is_empty():
-		message.emit("Connect a controller for player 2")
+		# Browsers only reveal a controller once one of its buttons is pressed.
+		message.emit("Player 2: connect a controller and press any button on it")
 		return false
-	coop_joypads = [pads[0], pads[1]] if pads.size() >= 2 else [-1, pads[0]]
+	coop_joypads = coop_joypads_for(pads)
 	coop = true
 	_change_scene(SURVIVAL_SCENE)
 	return true
+
+
+## The co-op controllers for the connected [param pads]: with two, one each;
+## with one, it goes to player two and player one uses the keyboard (-1).
+static func coop_joypads_for(pads: Array[int]) -> Array[int]:
+	var joypads: Array[int] = [-1, pads[0]]
+	if pads.size() >= 2:
+		joypads = [pads[0], pads[1]]
+	return joypads
 
 
 ## Plays the same survival game (single player or co-op) again.

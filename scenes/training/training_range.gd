@@ -31,35 +31,62 @@ const RESTART_TIME := 3.0
 @onready var spawns: Node3D = $Mobsters
 
 
+## Mobsters and targets standing in the range now.
+var _opponents: Array[Node] = []
+## Bumped whenever the opponents change, so respawns of the old ones are
+## dropped.
+var _generation := 0
+
+
 func _ready() -> void:
 	player.painkillers = Game.setting("start_painkillers")
 	player.painkillers_changed.emit(player.painkillers)
 	player.died.connect(_on_player_died)
 	_bake_navigation()
-	if not spawn_mobsters:
-		return
-	if Game.training_mobsters > 0:
-		for index in SPOT_ORDER.slice(0, mini(Game.training_mobsters, spawns.get_child_count())):
-			_spawn(spawns.get_child(index) as Node3D)
+	if spawn_mobsters:
+		set_opponents(Game.training_mobsters)
+
+
+## Puts [param count] mobsters at the far end, or the practice targets when
+## it is 0, in place of whoever stands there now (also from the pause menu).
+func set_opponents(count: int) -> void:
+	Game.training_mobsters = count
+	_generation += 1
+	for node in _opponents:
+		if is_instance_valid(node):
+			node.queue_free()
+	_opponents.clear()
+	if count > 0:
+		for index in SPOT_ORDER.slice(0, mini(count, spawns.get_child_count())):
+			_spawn(spawns.get_child(index) as Node3D, _generation)
 		return
 	for index in spawns.get_child_count():
 		var spot := spawns.get_child(index) as Node3D
+		if not spot is Marker3D:
+			continue
 		var target: TargetDummy = TARGET_SCENE.instantiate()
 		target.patrol_distance = PATROLLING_SPOTS.get(index, 0.0)
 		target.position = spot.position
 		spawns.add_child(target)
+		_opponents.append(target)
 
 
-func _spawn(spot: Node3D) -> void:
-	if not is_inside_tree() or player.state == Player.State.DEAD:
+## How the menus name [param count] opponents.
+static func opponents_text(count: int) -> String:
+	return "targets" if count == 0 else "%d mobster%s" % [count, "" if count == 1 else "s"]
+
+
+func _spawn(spot: Node3D, generation: int) -> void:
+	if generation != _generation or not is_inside_tree() or player.state == Player.State.DEAD:
 		return
 	var enemy: Enemy = ENEMY_SCENE.instantiate()
 	enemy.target = player
 	add_child(enemy)
 	enemy.global_position = spot.global_position
 	enemy.apply_difficulty()
+	_opponents.append(enemy)
 	enemy.died.connect(func(_enemy: Enemy) -> void:
-		get_tree().create_timer(RESPAWN_TIME, false).timeout.connect(_spawn.bind(spot)))
+		get_tree().create_timer(RESPAWN_TIME, false).timeout.connect(_spawn.bind(spot, generation)))
 
 
 func _on_player_died() -> void:

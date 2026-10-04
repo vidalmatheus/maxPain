@@ -234,9 +234,7 @@ func _refresh_controls() -> void:
 
 
 func _refresh_training() -> void:
-	var count := Game.training_mobsters
-	var what := "targets" if count == 0 else "%d mobster%s" % [count, "" if count == 1 else "s"]
-	_training_button.text = "Training: < %s >" % what
+	_training_button.text = "Training: < %s >" % TrainingRange.opponents_text(Game.training_mobsters)
 
 
 func _start_training() -> void:

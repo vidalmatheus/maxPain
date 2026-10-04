@@ -363,6 +363,10 @@ func _test_training() -> void:
 	add_child(range)
 	await _frames(5)
 	_check(get_tree().get_nodes_in_group(&"enemies").size() == 2, "the number of training mobsters can be picked")
+	# The pause menu changes the opponents on the spot.
+	range.set_opponents(0)
+	await _frames(3)
+	_check(get_tree().get_nodes_in_group(&"enemies").size() == spots, "the opponents can be changed during training")
 	range.queue_free()
 	await _frames(2)
 	Game.training_mobsters = 3
@@ -477,9 +481,13 @@ func _test_survival() -> void:
 
 
 func _test_coop() -> void:
+	var one_pad: Array[int] = [5]
+	var two_pads: Array[int] = [2, 5]
+	_check(Game.coop_joypads_for(one_pad) == [-1, 5] and Game.coop_joypads_for(two_pads) == [2, 5],
+			"co-op hands out the controllers (one: player two, two: one each)")
 	# Player one on the keyboard, player two on controller 5.
 	Game.coop = true
-	Game.coop_joypads = [-1, 5]
+	Game.coop_joypads = Game.coop_joypads_for(one_pad)
 	var game: Survival = SURVIVAL_SCENE.instantiate()
 	add_child(game)
 	await _frames(10)
@@ -521,6 +529,20 @@ func _test_coop() -> void:
 	await _frames(2)
 	_check(one.global_position.distance_to(one_start) > 0.5 and two.global_position.distance_to(two_start) < 0.1,
 			"the keyboard moves player one only (%.2f, %.2f)" % [one.global_position.distance_to(one_start), two.global_position.distance_to(two_start)])
+	# Bullet time is shared: player two's R3 slows down the world for both.
+	BulletTime.adrenaline = BulletTime.max_adrenaline
+	var r3 := InputEventJoypadButton.new()
+	r3.device = 5
+	r3.button_index = JOY_BUTTON_RIGHT_STICK
+	r3.pressed = true
+	Input.parse_input_event(r3)
+	await _frames(2)
+	r3 = r3.duplicate()
+	r3.pressed = false
+	Input.parse_input_event(r3)
+	await _frames(2)
+	_check(BulletTime.is_active, "player two's R3 starts bullet time for both players")
+	BulletTime.reset()
 	# A fallen player gets back up at the next wave; both down is game over.
 	two.take_hit(1000.0, two.global_position + Vector3(0, 1.2, 0), Vector3.FORWARD)
 	_check(two.state == Player.State.DEAD and not game.is_over, "the game goes on while one player is standing")

@@ -113,6 +113,8 @@ func get_gun_transform(side := "r") -> Transform3D:
 
 
 func _on_pose_finished() -> void:
+	if not is_inside_tree():
+		return
 	for side in ["r", "l"]:
 		var grip := &"right" if side == "r" else &"left"
 		var hand := skeleton.get_bone_global_pose(skeleton.find_bone("hand_" + side))
